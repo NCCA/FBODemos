@@ -1,4 +1,4 @@
-#version 400
+#version 330 core
 
 /// @brief MVP passed from app
 uniform mat4 MVP;

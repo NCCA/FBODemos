@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 /// @file Colour.fs
 /// @brief a basic unshaded solid colour shader
 /// @brief the colour to shade draw with

@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 
 /// @file Colour.vs
 /// @brief a basic unshaded solid colour shader used with Colour.fs
@@ -10,7 +10,7 @@ uniform mat4 MVP;
 layout (location=0) in vec3 inVert;
 uniform vec4 Colour;
 
-void main(void)
+void main()
 {
 // calculate the vertex position
 gl_Position = MVP*vec4(inVert, 1.0);

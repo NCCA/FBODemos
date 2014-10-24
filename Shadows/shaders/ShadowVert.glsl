@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 
 /// modified from the OpenGL Shading Language Example "Orange Book"
 /// Roost 2002

@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 
 // this is a pointer to the current 2D texture object
 uniform sampler2D tex;

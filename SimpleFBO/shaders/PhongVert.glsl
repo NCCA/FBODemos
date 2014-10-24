@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 /// @brief flag to indicate if model has unit normals if not normalize
 uniform bool Normalize;
 // the eye position of the camera
@@ -12,14 +12,6 @@ layout (location=2) in vec3 inNormal;
 /// @brief the in uv
 layout (location=1) in vec2 inUV;
 
-struct Materials
-{
-	vec4 ambient;
-	vec4 diffuse;
-	vec4 specular;
-	float shininess;
-};
-
 
 struct Lights
 {
@@ -28,8 +20,7 @@ struct Lights
 	vec4 diffuse;
 	vec4 specular;
 };
-// our material
-uniform Materials material;
+
 // array of lights
 uniform Lights light;
 // direction of the lights used for shading

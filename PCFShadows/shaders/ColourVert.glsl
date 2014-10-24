@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 
 /// @file Colour.vs
 /// @brief a basic unshaded solid colour shader used with Colour.fs

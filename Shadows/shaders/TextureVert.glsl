@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 
 /// @brief MVP passed from app
 uniform mat4 MVP;
@@ -9,7 +9,7 @@ layout (location=1) in vec2 inUV;
 // we use this to pass the UV values to the frag shader
 out vec2 vertUV;
 
-void main(void)
+void main()
 {
 // pre-calculate for speed we will use this a lot
 
