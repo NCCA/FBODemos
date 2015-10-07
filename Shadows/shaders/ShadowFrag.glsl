@@ -15,7 +15,7 @@ in vec4 ShadowCoord;
 
 void main ()
 {
-	float shadeFactor=textureProj(ShadowMap,ShadowCoord).x;
+  float shadeFactor=textureProj(ShadowMap,ShadowCoord).x;
         shadeFactor=shadeFactor;// * 0.25 + 0.75;
 	outColour=vec4(shadeFactor * Colour.rgb, Colour.a);
 	//outColour=vec4(ShadowCoord);
