@@ -29,7 +29,6 @@ NGLScene::NGLScene()
    m_spinYFace=0;
    // this timer is going to trigger an event every 40ms which will be processed in the
    //
-   m_lightTimer =startTimer(40);
    m_animate=true;
    m_lightPosition.set(8,4,8);
    m_lightYPos=4.0;
@@ -177,6 +176,8 @@ void NGLScene::initializeGL()
   // as re-size is not explicitly called we need to do this.
   // also need to take into account the retina display
   glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
+  m_lightTimer =startTimer(40);
+
 }
 const static int TEXTURE_WIDTH=1024;
 const static int TEXTURE_HEIGHT=1024;
