@@ -1,5 +1,5 @@
 #include "MainWindow.h"
-#include "GLWindow.h"
+#include "NGLScene.h"
 #include "ui_MainWindow.h"
 #include <QApplication>
 
@@ -7,10 +7,7 @@
 MainWindow::MainWindow(QWidget *_parent ):  QMainWindow(_parent),m_ui(new Ui::MainWindow)
 {
   m_ui->setupUi(this);
-  QGLFormat format;
-  format.setVersion(4,1);
-  format.setProfile( QGLFormat::CoreProfile);
-  m_gl=new  GLWindow(format,this);
+  m_gl=new  NGLScene(this);
   m_ui->s_mainWindowGridLayout->addWidget(m_gl,0,0,3,1);
   connect(m_ui->m_showDepthMap ,SIGNAL(toggled(bool)),m_gl,SLOT(setDebugQuad(bool)));
   connect(m_ui->m_animate ,SIGNAL(toggled(bool)),m_gl,SLOT(setAnimation(bool)));
@@ -44,9 +41,7 @@ MainWindow::~MainWindow()
 
 
 //----------------------------------------------------------------------------------------------------------------------
-void MainWindow::keyPressEvent(
-                               QKeyEvent *_event
-                              )
+void MainWindow::keyPressEvent( QKeyEvent *_event)
 {
   // this method is called every time the main window recives a key event.
   // we then switch on the key value and set the camera in the GLWindow
@@ -62,7 +57,7 @@ void MainWindow::keyPressEvent(
   default : break;
   }
   // finally update the GLWindow and re-draw
-  m_gl->updateGL();
+  m_gl->update();
 }
 
 
