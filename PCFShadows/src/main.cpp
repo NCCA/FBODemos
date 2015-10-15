@@ -8,7 +8,7 @@ int main(int argc, char **argv)
   // set the number of samples for multisampling
   // will need to enable glEnable(GL_MULTISAMPLE); once we have a context
   format.setSamples(4);
-  #if defined( DARWIN)
+  #if defined( __APPLE__)
     // at present mac osx Mountain Lion only supports GL3.2
     // the new mavericks will have GL 4.x so can change
     format.setMajorVersion(4);
@@ -16,7 +16,7 @@ int main(int argc, char **argv)
   #else
     // with luck we have the latest GL version so set to this
     format.setMajorVersion(4);
-    format.setMinorVersion(3);
+    format.setMinorVersion(5);
   #endif
   // now we are going to set to CoreProfile OpenGL so we can't use and old Immediate mode GL
   format.setProfile(QSurfaceFormat::CoreProfile);

@@ -37,7 +37,6 @@ NGLScene::NGLScene(QWidget *_parent ): QOpenGLWidget( _parent )
   m_spinYFace=0;
   // this timer is going to trigger an event every 40ms which will be processed in the
   //
-  m_lightTimer =startTimer(40);
   m_animate=true;
   m_lightPosition.set(8,4,8);
   m_lightYPos=4.0;
@@ -69,18 +68,13 @@ NGLScene::~NGLScene()
 //----------------------------------------------------------------------------------------------------------------------
 void NGLScene::initializeGL()
 {
-
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
   ngl::NGLInit::instance();
-
-  glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
   // enable multisampling for smoother drawing
   glEnable(GL_MULTISAMPLE);
-
-
   // now to load the shader and set the values
   // grab an instance of shader manager
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
@@ -190,8 +184,8 @@ void NGLScene::initializeGL()
   // enable face culling this will be switch to front and back when
   // rendering shadow or scene
   glEnable(GL_CULL_FACE);
-  m_text = new ngl::Text(QFont("Ariel",14));
-  m_text->setColour(1,1,1);
+  m_lightTimer =startTimer(40);
+
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -199,17 +193,20 @@ void NGLScene::initializeGL()
 // The new size is passed in width and height.
 void NGLScene::resizeGL(int _w, int _h)
 {
-  int w=_w*devicePixelRatio();
-  int h=_h*devicePixelRatio();
-  glViewport(0,0,w,h);
-  m_cam->setShape(45,(float)w/h,3.0f,400.0f);
+  // set the viewport for openGL we need to take into account retina display
+  // etc by using the pixel ratio as a multiplyer
+  glViewport(0,0,_w*devicePixelRatio(),_h*devicePixelRatio());
+  // now set the camera size values as the screen size has changed
+  m_cam->setShape(45.0f,(float)width()/height(),0.05f,350.0f);
   m_width=_w;
   m_height=_h;
-  m_text->setScreenSize(w,h);
+  update();
+
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget needs to be painted.
 // this is our main drawing routine
+
 void NGLScene::paintGL()
 {
   //----------------------------------------------------------------------------------------------------------------------
@@ -217,7 +214,6 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // enable culling
   glEnable(GL_CULL_FACE);
-  glEnable(GL_MULTISAMPLE_ARB);
 
   // bind the FBO and render offscreen to the texture
   glBindFramebuffer(GL_FRAMEBUFFER,m_fboID);
@@ -244,22 +240,21 @@ void NGLScene::paintGL()
   // Pass two use the texture
   // now we have created the texture for shadows render the scene properly
   //----------------------------------------------------------------------------------------------------------------------
-  // go back to our normal framebuffer
-  glBindFramebuffer(GL_FRAMEBUFFER,0);
+  // go back to our normal framebuffer note as Qt uses FBO's internally the id
+  // is not 0 (as we would usually use) so get the actual FBO value with
+  // QOpenGLWidget::defaultFramebufferObject()
+  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
   // set the viewport to the screen dimensions
-  glViewport(0,0,m_width,m_height);
+  glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
   // enable colour rendering again (as we turned it off earlier)
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   // clear the screen
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // bind the shadow texture
   glBindTexture(GL_TEXTURE_2D,m_textureID);
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE );
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE );
 
-  glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
-  // we need to generate the mip maps each time we bind
-  glGenerateMipmap(GL_TEXTURE_2D);
   // now only cull back faces
 
   glDisable(GL_CULL_FACE);
@@ -272,8 +267,6 @@ void NGLScene::paintGL()
   if(m_drawDebugQuad)
   {
     glBindTexture(GL_TEXTURE_2D,m_textureID);
-//    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
-//    glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
     debugTexture(-0.6,-1,0.6,1);
   }
   //----------------------------------------------------------------------------------------------------------------------
@@ -290,7 +283,6 @@ void NGLScene::paintGL()
                     m_cam->getVPMatrix();
     shader->setShaderParamFromMat4("MVP",MVP);
     prim->draw("cube");
-    std::cout<<"render\n";
 }
 
 
@@ -305,8 +297,6 @@ void NGLScene::createFramebufferObject()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_textureMinFilter );
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_textureMagFilter );
   glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
   glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
   glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
@@ -372,9 +362,7 @@ void NGLScene::loadToLightPOVShader()
   shader->setRegisteredUniformFromMat4("MVP",MVP);
 }
 
-void NGLScene::drawScene(
-                          funcPointer _shaderFunc
-                      )
+void NGLScene::drawScene(funcPointer _shaderFunc  )
 {
   // Rotation based on the mouse position for our global transform
   ngl::Mat4 rotX;
@@ -431,8 +419,6 @@ void NGLScene::drawScene(
     m_transform.setPosition(0.0,-0.5,0.0);
     CALLMEMBERFUNC(*this,_shaderFunc)();
     prim->draw("plane");
-
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -549,10 +535,10 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Texture");
-  ngl::Mat4 MVP;
-  MVP.identity();
+  ngl::Mat4 MVP=1;
   shader->setShaderParamFromMat4("MVP",MVP);
   glBindTexture(GL_TEXTURE_2D,m_textureID);
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
 
   ngl::VertexArrayObject *quad=ngl::VertexArrayObject::createVOA(GL_TRIANGLES);
   float* vert = new float[18];	// vertex array
@@ -586,6 +572,7 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
   quad->removeVOA();
   delete quad;
   delete uv;
+
 }
 
 void NGLScene::changeTextureSize(int _i)

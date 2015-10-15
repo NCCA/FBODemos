@@ -84,7 +84,6 @@ void NGLScene::initializeGL()
   m_cam->setShape(45,(float)720.0/576.0,znear,zfar);
 
   // now load to our light POV camera
-
   m_lightCamera= new ngl::Camera(m_lightPosition,to,up);
   // here we set the light POV camera shape, the aspect is 1 as our
   // texture is square.
