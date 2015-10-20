@@ -109,8 +109,8 @@ void NGLScene::initializeGL()
   // we are creating a shader called Texture
   shader->createShaderProgram("Texture");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("TextureVertex",ngl::VERTEX);
-  shader->attachShader("TextureFragment",ngl::FRAGMENT);
+  shader->attachShader("TextureVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
   shader->loadShaderSource("TextureVertex","shaders/TextureVert.glsl");
   shader->loadShaderSource("TextureFragment","shaders/TextureFrag.glsl");
@@ -131,8 +131,8 @@ void NGLScene::initializeGL()
   // we are creating a shader called Colour
   shader->createShaderProgram("Colour");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("ColourVertex",ngl::VERTEX);
-  shader->attachShader("ColourFragment",ngl::FRAGMENT);
+  shader->attachShader("ColourVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("ColourFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
   shader->loadShaderSource("ColourVertex","shaders/ColourVert.glsl");
   shader->loadShaderSource("ColourFragment","shaders/ColourFrag.glsl");
@@ -151,8 +151,8 @@ void NGLScene::initializeGL()
   // we are creating a shader called Shadow
   shader->createShaderProgram("Shadow");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("ShadowVertex",ngl::VERTEX);
-  shader->attachShader("ShadowFragment",ngl::FRAGMENT);
+  shader->attachShader("ShadowVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("ShadowFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
   shader->loadShaderSource("ShadowVertex","shaders/ShadowVert.glsl");
   shader->loadShaderSource("ShadowFragment","shaders/ShadowFrag.glsl");

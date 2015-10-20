@@ -119,8 +119,8 @@ void NGLScene::initializeGL()
   // we are creating a shader called Phong
   shader->createShaderProgram("Phong");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("PhongVertex",ngl::VERTEX);
-  shader->attachShader("PhongFragment",ngl::FRAGMENT);
+  shader->attachShader("PhongVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("PhongFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
   shader->loadShaderSource("PhongVertex","shaders/PhongVert.glsl");
   shader->loadShaderSource("PhongFragment","shaders/PhongFrag.glsl");
@@ -164,8 +164,8 @@ void NGLScene::initializeGL()
   // now load our texture shader
   shader->createShaderProgram("TextureShader");
 
-  shader->attachShader("TextureVertex",ngl::VERTEX);
-  shader->attachShader("TextureFragment",ngl::FRAGMENT);
+  shader->attachShader("TextureVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
   shader->loadShaderSource("TextureVertex","shaders/TextureVertex.glsl");
   shader->loadShaderSource("TextureFragment","shaders/TextureFragment.glsl");
 
