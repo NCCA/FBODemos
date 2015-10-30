@@ -43,14 +43,13 @@ NGLScene::~NGLScene()
   std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
 }
 
-void NGLScene::resizeGL(int _w, int _h)
+void NGLScene::resizeGL(QResizeEvent *_event)
 {
-  // set the viewport for openGL we need to take into account retina display
-  // etc by using the pixel ratio as a multiplyer
-  glViewport(0,0,_w*devicePixelRatio(),_h*devicePixelRatio());
+  m_width=_event->size().width()*devicePixelRatio();
+  m_height=_event->size().height()*devicePixelRatio();
   // now set the camera size values as the screen size has changed
-  m_cam->setShape(45.0f,(float)width()/height(),0.05f,350.0f);
-  update();
+  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
+
 }
 
 const static float znear=0.1;
@@ -78,19 +77,19 @@ void NGLScene::initializeGL()
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   // now load to our new camera
-  m_cam= new ngl::Camera(from,to,up);
+  m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam->setShape(45,(float)720.0/576.0,znear,zfar);
+  m_cam.setShape(45,(float)720.0/576.0,znear,zfar);
 
   // now load to our light POV camera
-  m_lightCamera= new ngl::Camera(m_lightPosition,to,up);
+  m_lightCamera.set(m_lightPosition,to,up);
   // here we set the light POV camera shape, the aspect is 1 as our
   // texture is square.
   // use the same clip plane as before but set the FOV a bit larger
   // to get slightly better shadows and the clip planes will help
   // to get rid of some of the artefacts
-  m_lightCamera->setShape(45,float(width()/height()),znear,zfar);
+  m_lightCamera.setShape(45,float(width()/height()),znear,zfar);
 
 
   // in this case I'm only using the light to hold the position
@@ -170,7 +169,7 @@ void NGLScene::initializeGL()
   // rendering shadow or scene
   glEnable(GL_CULL_FACE);
   glPolygonOffset(1.1,4);
-  m_text = new ngl::Text(QFont("Ariel",14));
+  m_text.reset(  new ngl::Text(QFont("Ariel",14)));
   m_text->setColour(1,1,1);
   // as re-size is not explicitly called we need to do this.
   // also need to take into account the retina display
@@ -178,8 +177,8 @@ void NGLScene::initializeGL()
   m_lightTimer =startTimer(40);
 
 }
-const static int TEXTURE_WIDTH=1024;
-const static int TEXTURE_HEIGHT=1024;
+constexpr int TEXTURE_WIDTH=1024;
+constexpr int TEXTURE_HEIGHT=1024;
 
 
 void NGLScene::loadMatricesToShadowShader()
@@ -191,8 +190,8 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
   M=m_transform.getMatrix()*m_mouseGlobalTX;
-  MV=  M*m_cam->getViewMatrix();
-  MVP= M*m_cam->getVPMatrix();
+  MV=  M*m_cam.getViewMatrix();
+  MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
   shader->setShaderParamFromMat4("MV",MV);
@@ -209,8 +208,8 @@ void NGLScene::loadMatricesToShadowShader()
   bias.scale(0.5,0.5,0.5);
   bias.translate(0.5,0.5,0.5);
 
-  ngl::Mat4 view=m_lightCamera->getViewMatrix();
-  ngl::Mat4 proj=m_lightCamera->getProjectionMatrix();
+  ngl::Mat4 view=m_lightCamera.getViewMatrix();
+  ngl::Mat4 proj=m_lightCamera.getProjectionMatrix();
   ngl::Mat4 model=m_transform.getMatrix();
 
   ngl::Mat4 textureMatrix= model * view*proj * bias;
@@ -221,11 +220,11 @@ void NGLScene::loadToLightPOVShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
-  ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera->getVPMatrix();
+  ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera.getVPMatrix();
   shader->setShaderParamFromMat4("MVP",MVP);
 }
 
-void NGLScene::drawScene(funcPointer _shaderFunc )
+void NGLScene::drawScene(std::function<void()> _shaderFunc )
 {
   // Rotation based on the mouse position for our global transform
   ngl::Mat4 rotX;
@@ -249,32 +248,32 @@ void NGLScene::drawScene(funcPointer _shaderFunc )
     // see the c++ faq link in header for more details
     m_transform.setScale(0.1,0.1,0.1);
     m_transform.setPosition(0.0f,-0.5f,0.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("dragon");
     m_transform.reset();
     m_transform.setPosition(-3.0f,0.0f,0.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("sphere");
     m_transform.reset();
     m_transform.setPosition(3.0f,0.0f,0.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("cube");
     m_transform.reset();
     m_transform.setPosition(0.0f,0.0f,2.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("teapot");
     m_transform.reset();
     m_transform.setScale(0.1f,0.1f,0.1f);
     m_transform.setPosition(0.0f,-0.5f,-2.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("buddah");
     m_transform.reset();
     m_transform.setPosition(2.0f,0.0f,-2.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("torus");
     m_transform.reset();
     m_transform.setPosition(0.0f,-0.5f,0.0f);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("plane");
 
 }
@@ -303,8 +302,9 @@ void NGLScene::paintGL()
 
   // render only the back faces so we don't get too much self shadowing
   glCullFace(GL_FRONT);
-  // draw the scene from the POV of the light
-  drawScene(&NGLScene::loadToLightPOVShader);
+  // draw the scene from the POV of the light using the function we need
+  auto f=std::bind(&NGLScene::loadToLightPOVShader,this);
+  drawScene(f);
   //----------------------------------------------------------------------------------------------------------------------
   // Pass two use the texture
   // now we have created the texture for shadows render the scene properly
@@ -328,7 +328,8 @@ void NGLScene::paintGL()
   glDisable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   // render our scene with the shadow shader
-  drawScene(&NGLScene::loadMatricesToShadowShader);
+  f=std::bind(&NGLScene::loadMatricesToShadowShader,this);
+  drawScene(f);
   //----------------------------------------------------------------------------------------------------------------------
   // this draws the debug texture on the quad
   //----------------------------------------------------------------------------------------------------------------------
@@ -344,7 +345,7 @@ void NGLScene::paintGL()
   shader->use("Colour");
   m_transform.reset();
   m_transform.setPosition(m_lightPosition);
-  ngl::Mat4 MVP=m_transform.getMatrix() *m_cam->getVPMatrix();
+  ngl::Mat4 MVP=m_transform.getMatrix() *m_cam.getVPMatrix();
   shader->setShaderParamFromMat4("MVP",MVP);
   prim->draw("cube");
 
@@ -531,7 +532,7 @@ void NGLScene::updateLight()
   m_lightAngle+=0.05;
   m_lightPosition.set(m_lightXoffset*cos(m_lightAngle),m_lightYPos,m_lightXoffset*sin(m_lightAngle));
   // now set this value and load to the shader
-  m_lightCamera->set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
+  m_lightCamera.set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
 }
 
 void NGLScene::timerEvent(QTimerEvent *_event )

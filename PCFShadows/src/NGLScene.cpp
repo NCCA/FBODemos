@@ -9,6 +9,7 @@
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
 #include <QColorDialog>
+#include <array>
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief the increment for x/y translation with mouse movement
 //----------------------------------------------------------------------------------------------------------------------
@@ -82,29 +83,29 @@ void NGLScene::initializeGL()
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(0,2,6);
-  ngl::Vec3 to(0,0,0);
-  ngl::Vec3 up(0,1,0);
+  ngl::Vec3 from(0.0f,2.0f,6.0f);
+  ngl::Vec3 to(0.0f,0.0f,0.0f);
+  ngl::Vec3 up(0.0f,1.0f,0.0f);
   // now load to our new camera
-  m_cam= new ngl::Camera(from,to,up);
+  m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam->setShape(45,(float)720.0/576.0,m_zNear,m_zfar);
+  m_cam.setShape(45.0f,(float)720.0f/576.0f,m_zNear,m_zfar);
 
   // now load to our light POV camera
 
-  m_lightCamera= new ngl::Camera(m_lightPosition,to,up);
+  m_lightCamera.set(m_lightPosition,to,up);
   // here we set the light POV camera shape, the aspect is 1 as our
   // texture is square.
   // use the same clip plane as before but set the FOV a bit larger
   // to get slightly better shadows and the clip planes will help
   // to get rid of some of the artefacts
-  m_lightCamera->setShape(m_fov,1.0,m_zNear,m_zfar);
+  m_lightCamera.setShape(m_fov,1.0f,m_zNear,m_zfar);
 
 
   // in this case I'm only using the light to hold the position
   // it is not passed to the shader directly
-  m_lightAngle=0.0;
+  m_lightAngle=0.0f;
 
   // we are creating a shader called Texture
   shader->createShaderProgram("Texture");
@@ -193,15 +194,10 @@ void NGLScene::initializeGL()
 // The new size is passed in width and height.
 void NGLScene::resizeGL(int _w, int _h)
 {
-  // set the viewport for openGL we need to take into account retina display
-  // etc by using the pixel ratio as a multiplyer
-  glViewport(0,0,_w*devicePixelRatio(),_h*devicePixelRatio());
   // now set the camera size values as the screen size has changed
-  m_cam->setShape(45.0f,(float)width()/height(),0.05f,350.0f);
+  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
   m_width=_w;
   m_height=_h;
-  update();
-
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget needs to be painted.
@@ -233,9 +229,10 @@ void NGLScene::paintGL()
   glEnable(GL_POLYGON_OFFSET_FILL);
   glPolygonOffset(m_polyOffsetFactor,m_polyOffsetScale );
   // set the shape of the camera before rendering
-  m_lightCamera->setShape(m_fov,1.0,m_zNear,m_zfar);
+  m_lightCamera.setShape(m_fov,1.0,m_zNear,m_zfar);
   // draw the scene from the POV of the light
-  drawScene(&NGLScene::loadToLightPOVShader);
+  auto f=std::bind(&NGLScene::loadToLightPOVShader,this);
+  drawScene(f);
   //----------------------------------------------------------------------------------------------------------------------
   // Pass two use the texture
   // now we have created the texture for shadows render the scene properly
@@ -260,7 +257,8 @@ void NGLScene::paintGL()
   glDisable(GL_CULL_FACE);
 
   // render our scene with the shadow shader
-  drawScene(&NGLScene::loadMatricesToShadowShader);
+  f=std::bind(&NGLScene::loadMatricesToShadowShader,this);
+  drawScene(f);
   //----------------------------------------------------------------------------------------------------------------------
   // this draws the debug texture on the quad
   //----------------------------------------------------------------------------------------------------------------------
@@ -280,7 +278,7 @@ void NGLScene::paintGL()
   m_transform.reset();
     m_transform.setPosition(m_lightPosition);
     ngl::Mat4 MVP=m_transform.getMatrix() * m_mouseGlobalTX *
-                    m_cam->getVPMatrix();
+                    m_cam.getVPMatrix();
     shader->setShaderParamFromMat4("MVP",MVP);
     prim->draw("cube");
 }
@@ -330,8 +328,8 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
   M=m_transform.getMatrix()*m_mouseGlobalTX;
-  MV=  M*m_cam->getViewMatrix();
-  MVP= M*m_cam->getVPMatrix();
+  MV=  M*m_cam.getViewMatrix();
+  MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
   shader->setRegisteredUniformFromMat4("MV",MV);
@@ -349,7 +347,7 @@ void NGLScene::loadMatricesToShadowShader()
 
   ngl::Mat4 model=m_transform.getMatrix();
   // calculate MVP then multiply by the bias
-  ngl::Mat4 textureMatrix= model * m_lightCamera->getVPMatrix() * bias;
+  ngl::Mat4 textureMatrix= model * m_lightCamera.getVPMatrix() * bias;
   shader->setRegisteredUniformFromMat4("textureMatrix",textureMatrix);
 
 }
@@ -358,11 +356,11 @@ void NGLScene::loadToLightPOVShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
-  ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera->getVPMatrix();
+  ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera.getVPMatrix();
   shader->setRegisteredUniformFromMat4("MVP",MVP);
 }
 
-void NGLScene::drawScene(funcPointer _shaderFunc  )
+void NGLScene::drawScene(std::function<void()> _shaderFunc  )
 {
   // Rotation based on the mouse position for our global transform
   ngl::Mat4 rotX;
@@ -386,45 +384,43 @@ void NGLScene::drawScene(funcPointer _shaderFunc  )
     // see the c++ faq link in header for more details
     m_transform.setScale(0.1,0.1,0.1);
     m_transform.setPosition(0,-0.5,0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("dragon");
     m_transform.reset();
     m_transform.setPosition(-3,0.0,0.0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("sphere");
 
   m_transform.reset();
 
     m_transform.setPosition(3,0.0,0.0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("cube");
 
   m_transform.reset();
     m_transform.setPosition(0,0.0,2.0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("teapot");
 
   m_transform.reset();
     m_transform.setScale(0.1,0.1,0.1);
     m_transform.setPosition(0,-0.5,-2.0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("buddah");
 
   m_transform.reset();
     m_transform.setPosition(2,0,-2.0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("torus");
 
   m_transform.reset();
     m_transform.setPosition(0.0,-0.5,0.0);
-    CALLMEMBERFUNC(*this,_shaderFunc)();
+    _shaderFunc();
     prim->draw("plane");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseMoveEvent (
-                               QMouseEvent * _event
-                              )
+void NGLScene::mouseMoveEvent (QMouseEvent * _event )
 {
   // note the method buttons() is the button state when event was called
   // this is different from button() which is used to check which button was
@@ -525,7 +521,7 @@ void NGLScene::timerEvent( QTimerEvent *_event )
 
 m_lightPosition.set(m_lightXoffset*cos(m_lightAngle),m_lightYPos,m_lightXoffset*sin(m_lightAngle));
 // now set this value and load to the shader
-m_lightCamera->set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
+m_lightCamera.set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
 
     // re-draw GL
 update();
@@ -540,9 +536,10 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
   glBindTexture(GL_TEXTURE_2D,m_textureID);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
 
-  ngl::VertexArrayObject *quad=ngl::VertexArrayObject::createVOA(GL_TRIANGLES);
-  float* vert = new float[18];	// vertex array
-  float* uv = new float[12];	// uv array
+  std::unique_ptr< ngl::VertexArrayObject>quad( ngl::VertexArrayObject::createVOA(GL_TRIANGLES));
+  std::array <GLfloat,18> vert;
+  std::array <GLfloat,12> uv;
+
   vert[0] =_t; vert[1] =  _l; vert[2] =0.0;
   vert[3] = _t; vert[4] =  _r; vert[5] =0.0;
   vert[6] = _b; vert[7] = _l; vert[8]= 0.0;
@@ -562,17 +559,14 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
 
   quad->bind();
 
-  quad->setData(18*sizeof(GLfloat),vert[0]);
+  quad->setData(vert.size()*sizeof(GLfloat),vert[0]);
   quad->setVertexAttributePointer(0,3,GL_FLOAT,0,0);
-  quad->setData(12*sizeof(GLfloat),uv[0]);
+  quad->setData(uv.size()*sizeof(GLfloat),uv[0]);
   quad->setVertexAttributePointer(1,2,GL_FLOAT,0,0);
-  quad->setNumIndices(6);
+  quad->setNumIndices(vert.size());
   quad->draw();
   quad->unbind();
   quad->removeVOA();
-  delete quad;
-  delete uv;
-
 }
 
 void NGLScene::changeTextureSize(int _i)

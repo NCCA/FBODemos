@@ -36,7 +36,6 @@ NGLScene::NGLScene()
 NGLScene::~NGLScene()
 {
   std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
-  delete m_light;
   // clear out our buffers
   glDeleteTextures(1,&m_textureID);
   glDeleteFramebuffers(1,&m_fboID);
@@ -87,16 +86,13 @@ void NGLScene::createFramebufferObject()
 
 }
 
-void NGLScene::resizeGL(int _w, int _h)
+void NGLScene::resizeGL(QResizeEvent *_event)
 {
-  // set the viewport for openGL we need to take into account retina display
-  // etc by using the pixel ratio as a multiplyer
-  glViewport(0,0,_w*devicePixelRatio(),_h*devicePixelRatio());
   // now set the camera size values as the screen size has changed
-  m_cam->setShape(45.0f,(float)width()/height(),0.05f,350.0f);
-  update();
-  m_width=_w;
-  m_height=_h;
+  m_width=_event->size().width()*devicePixelRatio();
+  m_height=_event->size().height()*devicePixelRatio();
+  // now set the camera size values as the screen size has changed
+  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
 }
 
 
@@ -146,20 +142,20 @@ void NGLScene::initializeGL()
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   // now load to our new camera
-  m_cam= new ngl::Camera(from,to,up);
+  m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam->setShape(45,(float)720.0/576.0,0.05,350);
-  shader->setShaderParam3f("viewerPos",m_cam->getEye().m_x,m_cam->getEye().m_y,m_cam->getEye().m_z);
+  m_cam.setShape(45,(float)720.0/576.0,0.05,350);
+  shader->setShaderParam3f("viewerPos",m_cam.getEye().m_x,m_cam.getEye().m_y,m_cam.getEye().m_z);
   // now create our light this is done after the camera so we can pass the
   // transpose of the projection matrix to the light to do correct eye space
   // transformations
-  ngl::Mat4 iv=m_cam->getViewMatrix();
+  ngl::Mat4 iv=m_cam.getViewMatrix();
   iv.transpose();
-  m_light = new ngl::Light(ngl::Vec3(-2,5,2),ngl::Colour(1,1,1,1),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
-  m_light->setTransform(iv);
+  ngl::Light light(ngl::Vec3(-2,5,2),ngl::Colour(1,1,1,1),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
+  light.setTransform(iv);
   // load these values to the shader as well
-  m_light->loadToShader("light");
+  light.loadToShader("light");
 
   // now load our texture shader
   shader->createShaderProgram("TextureShader");
@@ -201,8 +197,8 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
   M=m_transform.getMatrix()*m_mouseGlobalTX;
-  MV=  M*m_cam->getViewMatrix();
-  MVP= M*m_cam->getVPMatrix();
+  MV=  M*m_cam.getViewMatrix();
+  MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
   shader->setShaderParamFromMat4("MV",MV);
@@ -274,12 +270,12 @@ void NGLScene::paintGL()
   glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
   ngl::Mat4 MVP;
   m_transform.reset();
-  MVP= m_mouseGlobalTX*m_cam->getVPMatrix();
+  MVP= m_mouseGlobalTX*m_cam.getVPMatrix();
   shader->setShaderParamFromMat4("MVP",MVP);
   prim->draw("plane");
 
   m_transform.setPosition(0,1,0);
-  MVP= m_transform.getMatrix()*m_mouseGlobalTX*m_cam->getVPMatrix();
+  MVP= m_transform.getMatrix()*m_mouseGlobalTX*m_cam.getVPMatrix();
   shader->setShaderParamFromMat4("MVP",MVP);
   prim->draw("sphere");
   //----------------------------------------------------------------------------------------------------------------------
