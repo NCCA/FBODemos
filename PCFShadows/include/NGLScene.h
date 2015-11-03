@@ -10,6 +10,7 @@
 #include <QResizeEvent>
 #include <QTime>
 #include <QOpenGLWidget>
+#include <memory>
 //----------------------------------------------------------------------------------------------------------------------
 /// @file GLWindow.h
 /// @brief a basic Qt GL window class for ngl demos
