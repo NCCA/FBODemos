@@ -187,9 +187,6 @@ void NGLScene::initializeGL()
   ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   prim->createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
   prim->createSphere("sphere",0.4,80);
-
-  // as re-size is not explicitly called we need to do this.
-  glViewport(0,0,width(),height());
 }
 
 

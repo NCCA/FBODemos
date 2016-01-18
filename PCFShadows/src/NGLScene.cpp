@@ -231,8 +231,7 @@ void NGLScene::paintGL()
   // set the shape of the camera before rendering
   m_lightCamera.setShape(m_fov,1.0,m_zNear,m_zfar);
   // draw the scene from the POV of the light
-  auto f=std::bind(&NGLScene::loadToLightPOVShader,this);
-  drawScene(f);
+  drawScene(std::bind(&NGLScene::loadToLightPOVShader,this));
   //----------------------------------------------------------------------------------------------------------------------
   // Pass two use the texture
   // now we have created the texture for shadows render the scene properly
@@ -257,8 +256,7 @@ void NGLScene::paintGL()
   glDisable(GL_CULL_FACE);
 
   // render our scene with the shadow shader
-  f=std::bind(&NGLScene::loadMatricesToShadowShader,this);
-  drawScene(f);
+  drawScene(std::bind(&NGLScene::loadMatricesToShadowShader,this));
   //----------------------------------------------------------------------------------------------------------------------
   // this draws the debug texture on the quad
   //----------------------------------------------------------------------------------------------------------------------

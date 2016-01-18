@@ -309,8 +309,7 @@ void NGLScene::paintGL()
   // render only the back faces so we don't get too much self shadowing
   glCullFace(GL_FRONT);
   // draw the scene from the POV of the light using the function we need
-  auto f=std::bind(&NGLScene::loadToLightPOVShader,this);
-  drawScene(f);
+  drawScene(std::bind(&NGLScene::loadToLightPOVShader,this));
   //----------------------------------------------------------------------------------------------------------------------
   // Pass two use the texture
   // now we have created the texture for shadows render the scene properly
@@ -334,8 +333,7 @@ void NGLScene::paintGL()
   glDisable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   // render our scene with the shadow shader
-  f=std::bind(&NGLScene::loadMatricesToShadowShader,this);
-  drawScene(f);
+  drawScene(std::bind(&NGLScene::loadMatricesToShadowShader,this));
   //----------------------------------------------------------------------------------------------------------------------
   // this draws the debug texture on the quad
   //----------------------------------------------------------------------------------------------------------------------
