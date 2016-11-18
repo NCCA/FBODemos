@@ -1,5 +1,5 @@
-#ifndef NGLSCENE_H__
-#define NGLSCENE_H__
+#ifndef NGLSCENE_H_
+#define NGLSCENE_H_
 
 
 #include <ngl/Camera.h>
@@ -10,6 +10,7 @@
 #include <QResizeEvent>
 #include <QTime>
 #include <QOpenGLWidget>
+#include "WindowParams.h"
 #include <memory>
 //----------------------------------------------------------------------------------------------------------------------
 /// @file GLWindow.h
@@ -38,56 +39,28 @@ public :
   ~NGLScene();
 
 public slots :
-  inline void setDebugQuad(bool _t){m_drawDebugQuad=_t;}
+  void setDebugQuad(bool _t){m_drawDebugQuad=_t;}
   void changeTextureSize(int _i);
   void changeTextureMinFilter(int _i);
   void changeTextureMagFilter(int _i);
 
-  inline void setZNear(double _v){m_zNear=float(_v);}
-  inline void setZFar(double _v){m_zfar=float(_v);}
-  inline void setFOV(int _v){m_fov=float(_v);  }
-  inline void changeLightYPos(double _dy){m_lightYPos=_dy;}
-  inline void changeLightZOffset(double _dz){m_lightZoffset=_dz;}
-  inline void changeLightXOffset(double _dx){m_lightXoffset=_dx;}
-  inline void changePolygonOffsetFactor(double _f){m_polyOffsetFactor=_f;}
-  inline void changePolygonOffsetScale(double _s){m_polyOffsetFactor=_s;}
-  inline void setAnimation(bool _t){m_animate =_t;}
+  void setZNear(double _v){m_zNear=float(_v);}
+  void setZFar(double _v){m_zfar=float(_v);}
+  void setFOV(int _v){m_fov=float(_v);  }
+  void changeLightYPos(double _dy){m_lightYPos=float(_dy);}
+  void changeLightZOffset(double _dz){m_lightZoffset=float(_dz);}
+  void changeLightXOffset(double _dx){m_lightXoffset=float(_dx);}
+  void changePolygonOffsetFactor(double _f){m_polyOffsetFactor=float(_f);}
+  void changePolygonOffsetScale(double _s){m_polyOffsetFactor=float(_s);}
+  void setAnimation(bool _t){m_animate =_t;}
 
   void setColour();
 
 private :
   //----------------------------------------------------------------------------------------------------------------------
-  /// @brief used to store the x rotation mouse value
+  /// @brief the windows params such as mouse and rotations etc
   //----------------------------------------------------------------------------------------------------------------------
-  int m_spinXFace;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief used to store the y rotation mouse value
-  //----------------------------------------------------------------------------------------------------------------------
-  int m_spinYFace;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief flag to indicate if the mouse button is pressed when dragging
-  //----------------------------------------------------------------------------------------------------------------------
-  bool m_rotate;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief flag to indicate if the Right mouse button is pressed when dragging
-  //----------------------------------------------------------------------------------------------------------------------
-  bool m_translate;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief the previous x mouse value
-  //----------------------------------------------------------------------------------------------------------------------
-  int m_origX;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief the previous y mouse value
-  //----------------------------------------------------------------------------------------------------------------------
-  int m_origY;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief the previous x mouse value for Position changes
-  //----------------------------------------------------------------------------------------------------------------------
-  int m_origXPos;
-  //----------------------------------------------------------------------------------------------------------------------
-  /// @brief the previous y mouse value for Position changes
-  //----------------------------------------------------------------------------------------------------------------------
-  int m_origYPos;
+  WinParams m_win;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief used to store the global mouse transforms
   //----------------------------------------------------------------------------------------------------------------------
@@ -160,7 +133,7 @@ private :
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief size of the texture
   //----------------------------------------------------------------------------------------------------------------------
-  GLuint m_textureSize;
+  GLint m_textureSize;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief near clipping plane
   //----------------------------------------------------------------------------------------------------------------------

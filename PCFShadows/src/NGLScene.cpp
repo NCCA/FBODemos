@@ -3,21 +3,19 @@
 #include <ngl/Camera.h>
 #include <ngl/Light.h>
 #include <ngl/Mat4.h>
+
 #include <ngl/Transformation.h>
 #include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
+#include <ngl/VAOFactory.h>
+#include <ngl/MultiBufferVAO.h>
 #include <ngl/ShaderLib.h>
 #include <QColorDialog>
+
 #include <array>
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief the increment for x/y translation with mouse movement
-//----------------------------------------------------------------------------------------------------------------------
-const static float INCREMENT=0.01;
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief the increment for the wheel zoom
-//----------------------------------------------------------------------------------------------------------------------
-const static float ZOOM=0.1;
+
+
 //----------------------------------------------------------------------------------------------------------------------
 // in this ctor we need to call the CreateCoreGLContext class, this is mainly for the MacOS Lion version as
 // we need to init the OpenGL 3.2 sub-system which is different than other platforms
@@ -30,26 +28,18 @@ NGLScene::NGLScene(QWidget *_parent ): QOpenGLWidget( _parent )
   setFocus();
   // re-size the widget to that of the parent (in this case the GLFrame passed in on construction)
   this->resize(_parent->size());
-  // Now set the initial NGLScene attributes to default values
-  // Roate is false
-  m_rotate=false;
-  // mouse rotation values set to 0
-  m_spinXFace=0;
-  m_spinYFace=0;
-  // this timer is going to trigger an event every 40ms which will be processed in the
-  //
   m_animate=true;
   m_lightPosition.set(8,4,8);
-  m_lightYPos=4.0;
-  m_lightXoffset=8.0;
-  m_lightZoffset=8.0;
+  m_lightYPos=4.0f;
+  m_lightXoffset=8.0f;
+  m_lightZoffset=8.0f;
   m_drawDebugQuad=true;
   m_textureSize=512;
-  m_zNear=0.01;
+  m_zNear=0.01f;
   m_zfar=100;
-  m_fov=45.0;
-  m_polyOffsetFactor=0.0;
-  m_polyOffsetScale=0.0;
+  m_fov=45.0f;
+  m_polyOffsetFactor=0.0f;
+  m_polyOffsetScale=0.0f;
   m_textureMinFilter= GL_NEAREST;
   m_textureMagFilter=  GL_NEAREST;
   m_colour.set(1,1,1,1);
@@ -90,7 +80,7 @@ void NGLScene::initializeGL()
   m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45.0f,(float)720.0f/576.0f,m_zNear,m_zfar);
+  m_cam.setShape(45.0f,720.0f/576.0f,m_zNear,m_zfar);
 
   // now load to our light POV camera
 
@@ -171,7 +161,7 @@ void NGLScene::initializeGL()
   // create the primitives to draw
   ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   prim->createSphere("sphere",0.5,50);
-  prim->createTorus("torus",0.15,0.4,40,40);
+  prim->createTorus("torus",0.15f,0.4f,40,40);
 
   prim->createTrianglePlane("plane",14,14,80,80,ngl::Vec3(0,1,0));
   // now create our FBO and texture
@@ -192,12 +182,11 @@ void NGLScene::initializeGL()
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget has been resized.
 // The new size is passed in width and height.
-void NGLScene::resizeGL(int _w, int _h)
+void NGLScene::resizeGL( int _w, int _h )
 {
-  // now set the camera size values as the screen size has changed
-  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
-  m_width=_w;
-  m_height=_h;
+  m_cam.setShape( 45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
+  m_win.width  = static_cast<int>( _w * devicePixelRatio() );
+  m_win.height = static_cast<int>( _h * devicePixelRatio() );
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget needs to be painted.
@@ -364,8 +353,8 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
   ngl::Mat4 rotX;
   ngl::Mat4 rotY;
   // create the rotation matrices
-  rotX.rotateX(m_spinXFace);
-  rotY.rotateY(m_spinYFace);
+  rotX.rotateX(m_win.spinXFace);
+  rotY.rotateY(m_win.spinYFace);
   // multiply the rotations
   m_mouseGlobalTX=rotY*rotX;
   // add the translations
@@ -380,7 +369,7 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
     //  ((*this).*(_shaderFunc))(m_transformStack);
     // but a lot more readable as to the intent
     // see the c++ faq link in header for more details
-    m_transform.setScale(0.1,0.1,0.1);
+    m_transform.setScale(0.1f,0.1f,0.1f);
     m_transform.setPosition(0,-0.5,0);
     _shaderFunc();
     prim->draw("dragon");
@@ -401,7 +390,7 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
     prim->draw("teapot");
 
   m_transform.reset();
-    m_transform.setScale(0.1,0.1,0.1);
+    m_transform.setScale(0.1f,0.1f,0.1f);
     m_transform.setPosition(0,-0.5,-2.0);
     _shaderFunc();
     prim->draw("buddah");
@@ -418,85 +407,83 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseMoveEvent (QMouseEvent * _event )
+void NGLScene::mouseMoveEvent( QMouseEvent* _event )
 {
   // note the method buttons() is the button state when event was called
-  // this is different from button() which is used to check which button was
+  // that is different from button() which is used to check which button was
   // pressed when the mousePress/Release event is generated
-  if(m_rotate && _event->buttons() == Qt::LeftButton)
+  if ( m_win.rotate && _event->buttons() == Qt::LeftButton )
   {
-    m_spinYFace = ( m_spinYFace + (_event->x() - m_origX) ) % 360 ;
-    m_spinXFace = ( m_spinXFace + (_event->y() - m_origY) ) % 360 ;
-    m_origX = _event->x();
-    m_origY = _event->y();
+    int diffx = _event->x() - m_win.origX;
+    int diffy = _event->y() - m_win.origY;
+    m_win.spinXFace += static_cast<int>( 0.5f * diffy );
+    m_win.spinYFace += static_cast<int>( 0.5f * diffx );
+    m_win.origX = _event->x();
+    m_win.origY = _event->y();
     update();
-
   }
   // right mouse translate code
-  else if(m_translate && _event->buttons() == Qt::RightButton)
+  else if ( m_win.translate && _event->buttons() == Qt::RightButton )
   {
-    int diffX = (int)(_event->x() - m_origXPos);
-    int diffY = (int)(_event->y() - m_origYPos);
-    m_origXPos=_event->x();
-    m_origYPos=_event->y();
+    int diffX      = static_cast<int>( _event->x() - m_win.origXPos );
+    int diffY      = static_cast<int>( _event->y() - m_win.origYPos );
+    m_win.origXPos = _event->x();
+    m_win.origYPos = _event->y();
     m_modelPos.m_x += INCREMENT * diffX;
     m_modelPos.m_y -= INCREMENT * diffY;
     update();
-
   }
-
 }
 
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mousePressEvent (QMouseEvent * _event )
+void NGLScene::mousePressEvent( QMouseEvent* _event )
 {
-  // this method is called when the mouse button is pressed in this case we
+  // that method is called when the mouse button is pressed in this case we
   // store the value where the maouse was clicked (x,y) and set the Rotate flag to true
-  if(_event->button() == Qt::LeftButton)
+  if ( _event->button() == Qt::LeftButton )
   {
-    m_origX = _event->x();
-    m_origY = _event->y();
-    m_rotate =true;
+    m_win.origX  = _event->x();
+    m_win.origY  = _event->y();
+    m_win.rotate = true;
   }
   // right mouse translate mode
-  else if(_event->button() == Qt::RightButton)
+  else if ( _event->button() == Qt::RightButton )
   {
-    m_origXPos = _event->x();
-    m_origYPos = _event->y();
-    m_translate=true;
+    m_win.origXPos  = _event->x();
+    m_win.origYPos  = _event->y();
+    m_win.translate = true;
   }
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseReleaseEvent ( QMouseEvent * _event )
+void NGLScene::mouseReleaseEvent( QMouseEvent* _event )
 {
-  // this event is called when the mouse button is released
+  // that event is called when the mouse button is released
   // we then set Rotate to false
-  if (_event->button() == Qt::LeftButton)
+  if ( _event->button() == Qt::LeftButton )
   {
-    m_rotate=false;
+    m_win.rotate = false;
   }
   // right mouse translate mode
-  if (_event->button() == Qt::RightButton)
+  if ( _event->button() == Qt::RightButton )
   {
-    m_translate=false;
+    m_win.translate = false;
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::wheelEvent(QWheelEvent *_event)
+void NGLScene::wheelEvent( QWheelEvent* _event )
 {
 
   // check the diff of the wheel position (0 means no change)
-  if(_event->delta() > 0)
+  if ( _event->delta() > 0 )
   {
-    m_modelPos.m_z+=ZOOM;
+    m_modelPos.m_z += ZOOM;
   }
-  else if(_event->delta() <0 )
+  else if ( _event->delta() < 0 )
   {
-    m_modelPos.m_z-=ZOOM;
+    m_modelPos.m_z -= ZOOM;
   }
   update();
 }
@@ -534,7 +521,7 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
   glBindTexture(GL_TEXTURE_2D,m_textureID);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
 
-  std::unique_ptr< ngl::VertexArrayObject>quad( ngl::VertexArrayObject::createVOA(GL_TRIANGLES));
+  std::unique_ptr< ngl::AbstractVAO>quad( ngl::VAOFactory::createVAO("multiBufferVAO",GL_TRIANGLES));
   std::array <GLfloat,18> vert;
   std::array <GLfloat,12> uv;
 
@@ -557,14 +544,13 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
 
   quad->bind();
 
-  quad->setData(vert.size()*sizeof(GLfloat),vert[0]);
+  quad->setData(ngl::MultiBufferVAO::VertexData(vert.size()*sizeof(GLfloat),vert[0]));
   quad->setVertexAttributePointer(0,3,GL_FLOAT,0,0);
-  quad->setData(uv.size()*sizeof(GLfloat),uv[0]);
+  quad->setData(ngl::MultiBufferVAO::VertexData(uv.size()*sizeof(GLfloat),uv[0]));
   quad->setVertexAttributePointer(1,2,GL_FLOAT,0,0);
   quad->setNumIndices(vert.size());
   quad->draw();
   quad->unbind();
-  quad->removeVOA();
 }
 
 void NGLScene::changeTextureSize(int _i)

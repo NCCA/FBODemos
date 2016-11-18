@@ -27,6 +27,6 @@ void main()
 	vec4 texCoord = textureMatrix * inVert;
 	ShadowCoord   = texCoord;
 	Colour  = vec4(diffuse * inColour.rgb, inColour.a);
-	gl_Position    = MVP * inVert;
+  gl_Position    = MVP * inVert;
 }
 
