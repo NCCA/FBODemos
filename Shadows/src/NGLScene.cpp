@@ -66,7 +66,7 @@ void NGLScene::initializeGL()
   m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45,(float)720.0/576.0,znear,zfar);
+  m_cam.setShape(45,720.0f/576.0f,znear,zfar);
 
   // now load to our light POV camera
   m_lightCamera.set(m_lightPosition,to,up);
@@ -80,7 +80,7 @@ void NGLScene::initializeGL()
 
   // in this case I'm only using the light to hold the position
   // it is not passed to the shader directly
-  m_lightAngle=0.0;
+  m_lightAngle=0.0f;
 
   // we are creating a shader called Texture
   shader->createShaderProgram("Texture");
@@ -140,7 +140,7 @@ void NGLScene::initializeGL()
   // create the primitives to draw
   ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   prim->createSphere("sphere",0.5,50);
-  prim->createTorus("torus",0.15,0.4,40,40);
+  prim->createTorus("torus",0.15f,0.4f,40,40);
 
   prim->createTrianglePlane("plane",14,14,80,80,ngl::Vec3(0,1,0));
   // now create our FBO and texture
@@ -154,7 +154,7 @@ void NGLScene::initializeGL()
   // enable face culling this will be switch to front and back when
   // rendering shadow or scene
   glEnable(GL_CULL_FACE);
-  glPolygonOffset(1.1,4);
+  glPolygonOffset(1.1f,4);
   m_text.reset(  new ngl::Text(QFont("Ariel",14)));
   m_text->setColour(1,1,1);
   // as re-size is not explicitly called we need to do this.
@@ -232,7 +232,7 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc )
     //  ((*this).*(_shaderFunc))(m_transformStack);
     // but a lot more readable as to the intent
     // see the c++ faq link in header for more details
-    m_transform.setScale(0.1,0.1,0.1);
+    m_transform.setScale(0.1f,0.1f,0.1f);
     m_transform.setPosition(0.0f,-0.5f,0.0f);
     _shaderFunc();
     prim->draw("dragon");
@@ -390,88 +390,7 @@ void NGLScene::createFramebufferObject()
   // switch back to window-system-provided framebuffer
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-//----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseMoveEvent( QMouseEvent* _event )
-{
-  // note the method buttons() is the button state when event was called
-  // that is different from button() which is used to check which button was
-  // pressed when the mousePress/Release event is generated
-  if ( m_win.rotate && _event->buttons() == Qt::LeftButton )
-  {
-    int diffx = _event->x() - m_win.origX;
-    int diffy = _event->y() - m_win.origY;
-    m_win.spinXFace += static_cast<int>( 0.5f * diffy );
-    m_win.spinYFace += static_cast<int>( 0.5f * diffx );
-    m_win.origX = _event->x();
-    m_win.origY = _event->y();
-    update();
-  }
-  // right mouse translate code
-  else if ( m_win.translate && _event->buttons() == Qt::RightButton )
-  {
-    int diffX      = static_cast<int>( _event->x() - m_win.origXPos );
-    int diffY      = static_cast<int>( _event->y() - m_win.origYPos );
-    m_win.origXPos = _event->x();
-    m_win.origYPos = _event->y();
-    m_modelPos.m_x += INCREMENT * diffX;
-    m_modelPos.m_y -= INCREMENT * diffY;
-    update();
-  }
-}
 
-
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mousePressEvent( QMouseEvent* _event )
-{
-  // that method is called when the mouse button is pressed in this case we
-  // store the value where the maouse was clicked (x,y) and set the Rotate flag to true
-  if ( _event->button() == Qt::LeftButton )
-  {
-    m_win.origX  = _event->x();
-    m_win.origY  = _event->y();
-    m_win.rotate = true;
-  }
-  // right mouse translate mode
-  else if ( _event->button() == Qt::RightButton )
-  {
-    m_win.origXPos  = _event->x();
-    m_win.origYPos  = _event->y();
-    m_win.translate = true;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseReleaseEvent( QMouseEvent* _event )
-{
-  // that event is called when the mouse button is released
-  // we then set Rotate to false
-  if ( _event->button() == Qt::LeftButton )
-  {
-    m_win.rotate = false;
-  }
-  // right mouse translate mode
-  if ( _event->button() == Qt::RightButton )
-  {
-    m_win.translate = false;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::wheelEvent( QWheelEvent* _event )
-{
-
-  // check the diff of the wheel position (0 means no change)
-  if ( _event->delta() > 0 )
-  {
-    m_modelPos.m_z += ZOOM;
-  }
-  else if ( _event->delta() < 0 )
-  {
-    m_modelPos.m_z -= ZOOM;
-  }
-  update();
-}
 //----------------------------------------------------------------------------------------------------------------------
 
 void NGLScene::keyPressEvent(QKeyEvent *_event)
@@ -491,12 +410,12 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   // show windowed
   case Qt::Key_N : showNormal(); break;
   case Qt::Key_Space : toggleAnimation(); break;
-  case Qt::Key_Left : changeLightXOffset(-0.1); break;
-  case Qt::Key_Right : changeLightXOffset(0.1); break;
-  case Qt::Key_Up : changeLightYPos(0.1); break;
-  case Qt::Key_Down : changeLightYPos(-0.1); break;
-  case Qt::Key_I : changeLightZOffset(-0.1); break;
-  case Qt::Key_O : changeLightZOffset(0.1); break;
+  case Qt::Key_Left : changeLightXOffset(-0.1f); break;
+  case Qt::Key_Right : changeLightXOffset(0.1f); break;
+  case Qt::Key_Up : changeLightYPos(0.1f); break;
+  case Qt::Key_Down : changeLightYPos(-0.1f); break;
+  case Qt::Key_I : changeLightZOffset(-0.1f); break;
+  case Qt::Key_O : changeLightZOffset(0.1f); break;
 
   default : break;
   }

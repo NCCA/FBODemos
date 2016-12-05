@@ -18,8 +18,8 @@ CONFIG-=app_bundle
 # Auto include all .cpp files in the project src directory (can specifiy individually if required)
 SOURCES+= $$PWD/src/main.cpp  \
             $$PWD/src/MainWindow.cpp  \
-            $$PWD/src/NGLScene.cpp
-
+            $$PWD/src/NGLScene.cpp \
+            $$PWD/src/NGLSceneMouseControls.cpp
 
 FORMS+=ui/MainWindow.ui
 

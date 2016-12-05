@@ -27,7 +27,6 @@ NGLScene::~NGLScene()
   // clear out our buffers
   glDeleteTextures(1,&m_textureID);
   glDeleteFramebuffers(1,&m_fboID);
-  glDeleteRenderbuffers(1, &m_rboID );
 
 }
 
@@ -55,10 +54,10 @@ void NGLScene::createFramebufferObject()
   // create a framebuffer object this is deleted in the dtor
   glGenFramebuffers(1, &m_fboID);
   glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
-
+  GLuint rboID;
   // create a renderbuffer object to store depth info
-  glGenRenderbuffers(1, &m_rboID);
-  glBindRenderbuffer(GL_RENDERBUFFER, m_rboID);
+  glGenRenderbuffers(1, &rboID);
+  glBindRenderbuffer(GL_RENDERBUFFER, rboID);
 
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, TEXTURE_WIDTH, TEXTURE_HEIGHT);
   // bind
@@ -68,10 +67,11 @@ void NGLScene::createFramebufferObject()
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_textureID, 0);
 
   // now attach a renderbuffer to depth attachment point
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rboID);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboID);
   // now got back to the default render context
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+  // were finished as we have an attached RB so delete it
+  glDeleteRenderbuffers(1,&rboID);
 }
 
 
@@ -265,87 +265,7 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
  }
 
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseMoveEvent( QMouseEvent* _event )
-{
-  // note the method buttons() is the button state when event was called
-  // that is different from button() which is used to check which button was
-  // pressed when the mousePress/Release event is generated
-  if ( m_win.rotate && _event->buttons() == Qt::LeftButton )
-  {
-    int diffx = _event->x() - m_win.origX;
-    int diffy = _event->y() - m_win.origY;
-    m_win.spinXFace += static_cast<int>( 0.5f * diffy );
-    m_win.spinYFace += static_cast<int>( 0.5f * diffx );
-    m_win.origX = _event->x();
-    m_win.origY = _event->y();
-    update();
-  }
-  // right mouse translate code
-  else if ( m_win.translate && _event->buttons() == Qt::RightButton )
-  {
-    int diffX      = static_cast<int>( _event->x() - m_win.origXPos );
-    int diffY      = static_cast<int>( _event->y() - m_win.origYPos );
-    m_win.origXPos = _event->x();
-    m_win.origYPos = _event->y();
-    m_modelPos.m_x += INCREMENT * diffX;
-    m_modelPos.m_y -= INCREMENT * diffY;
-    update();
-  }
-}
 
-
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mousePressEvent( QMouseEvent* _event )
-{
-  // that method is called when the mouse button is pressed in this case we
-  // store the value where the maouse was clicked (x,y) and set the Rotate flag to true
-  if ( _event->button() == Qt::LeftButton )
-  {
-    m_win.origX  = _event->x();
-    m_win.origY  = _event->y();
-    m_win.rotate = true;
-  }
-  // right mouse translate mode
-  else if ( _event->button() == Qt::RightButton )
-  {
-    m_win.origXPos  = _event->x();
-    m_win.origYPos  = _event->y();
-    m_win.translate = true;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mouseReleaseEvent( QMouseEvent* _event )
-{
-  // that event is called when the mouse button is released
-  // we then set Rotate to false
-  if ( _event->button() == Qt::LeftButton )
-  {
-    m_win.rotate = false;
-  }
-  // right mouse translate mode
-  if ( _event->button() == Qt::RightButton )
-  {
-    m_win.translate = false;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void NGLScene::wheelEvent( QWheelEvent* _event )
-{
-
-  // check the diff of the wheel position (0 means no change)
-  if ( _event->delta() > 0 )
-  {
-    m_modelPos.m_z += ZOOM;
-  }
-  else if ( _event->delta() < 0 )
-  {
-    m_modelPos.m_z -= ZOOM;
-  }
-  update();
-}
 
 
 //----------------------------------------------------------------------------------------------------------------------
