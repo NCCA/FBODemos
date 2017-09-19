@@ -131,7 +131,7 @@ void NGLScene::initializeGL()
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
   m_cam.setShape(45,(float)720.0/576.0,0.05,350);
-  shader->setShaderParam3f("viewerPos",m_cam.getEye().m_x,m_cam.getEye().m_y,m_cam.getEye().m_z);
+  shader->setUniform("viewerPos",m_cam.getEye().toVec3());
   // now create our light this is done after the camera so we can pass the
   // transpose of the projection matrix to the light to do correct eye space
   // transformations
@@ -168,6 +168,8 @@ void NGLScene::initializeGL()
   prim->createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
   prim->createSphere("sphere",0.4f,80);
   startTimer(1);
+  GLint maxAttach = 0;
+  glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
 
 }
 
@@ -185,10 +187,10 @@ void NGLScene::loadMatricesToShader()
   MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
-  shader->setShaderParamFromMat4("MV",MV);
-  shader->setShaderParamFromMat4("MVP",MVP);
-  shader->setShaderParamFromMat3("normalMatrix",normalMatrix);
-  shader->setShaderParamFromMat4("M",M);
+  shader->setUniform("MV",MV);
+  shader->setUniform("MVP",MVP);
+  shader->setUniform("normalMatrix",normalMatrix);
+  shader->setUniform("M",M);
 }
 
 void NGLScene::paintGL()
@@ -255,12 +257,12 @@ void NGLScene::paintGL()
   ngl::Mat4 MVP;
   m_transform.reset();
   MVP= m_mouseGlobalTX*m_cam.getVPMatrix();
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
   prim->draw("plane");
 
   m_transform.setPosition(0,1,0);
   MVP= m_transform.getMatrix()*m_mouseGlobalTX*m_cam.getVPMatrix();
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
   prim->draw("sphere");
   //----------------------------------------------------------------------------------------------------------------------
  }

@@ -137,7 +137,7 @@ void NGLScene::initializeGL()
   // now we have associated this data we can link the shader
   shader->linkProgramObject("Colour");
   shader->use("Colour");
-  shader->setShaderParam4f("Colour",1,0,0,1);
+  shader->setUniform("Colour",1.0f,0.0f,0.0f,1.0f);
   shader->autoRegisterUniforms("Colour");
   // we are creating a shader called Shadow
   shader->createShaderProgram("Shadow");
@@ -252,7 +252,7 @@ void NGLScene::paintGL()
   if(m_drawDebugQuad)
   {
     glBindTexture(GL_TEXTURE_2D,m_textureID);
-    debugTexture(-0.6,-1,0.6,1);
+    debugTexture(-0.6f,-1.0f,0.6f,1.0f);
   }
   //----------------------------------------------------------------------------------------------------------------------
   // now we draw a cube to visualise the light
@@ -266,7 +266,7 @@ void NGLScene::paintGL()
     m_transform.setPosition(m_lightPosition);
     ngl::Mat4 MVP=m_transform.getMatrix() * m_mouseGlobalTX *
                     m_cam.getVPMatrix();
-    shader->setShaderParamFromMat4("MVP",MVP);
+    shader->setUniform("MVP",MVP);
     prim->draw("cube");
 }
 
@@ -319,11 +319,11 @@ void NGLScene::loadMatricesToShadowShader()
   MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
-  shader->setRegisteredUniformFromMat4("MV",MV);
-  shader->setRegisteredUniformFromMat4("MVP",MVP);
-  shader->setRegisteredUniformFromMat3("normalMatrix",normalMatrix);
-  shader->setRegisteredUniform3f("lightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
-  shader->setRegisteredUniformFromColour("inColour",m_colour);
+  shader->setUniform("MV",MV);
+  shader->setUniform("MVP",MVP);
+  shader->setUniform("normalMatrix",normalMatrix);
+  shader->setUniform("lightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
+  shader->setUniform("inColour",m_colour);
   // x = x* 0.5 + 0.5
   // y = y* 0.5 + 0.5
   // z = z* 0.5 + 0.5
@@ -335,7 +335,7 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat4 model=m_transform.getMatrix();
   // calculate MVP then multiply by the bias
   ngl::Mat4 textureMatrix= model * m_lightCamera.getVPMatrix() * bias;
-  shader->setRegisteredUniformFromMat4("textureMatrix",textureMatrix);
+  shader->setUniform("textureMatrix",textureMatrix);
 
 }
 
@@ -344,7 +344,7 @@ void NGLScene::loadToLightPOVShader()
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
   ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera.getVPMatrix();
-  shader->setRegisteredUniformFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
 }
 
 void NGLScene::drawScene(std::function<void()> _shaderFunc  )
@@ -423,7 +423,7 @@ void NGLScene::timerEvent( QTimerEvent *_event )
   }
 
 
-m_lightPosition.set(m_lightXoffset*cos(m_lightAngle),m_lightYPos,m_lightXoffset*sin(m_lightAngle));
+m_lightPosition.set(m_lightXoffset*cosf(m_lightAngle),m_lightYPos,m_lightXoffset*sinf(m_lightAngle));
 // now set this value and load to the shader
 m_lightCamera.set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
 
@@ -436,7 +436,7 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Texture");
   ngl::Mat4 MVP=1;
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
   glBindTexture(GL_TEXTURE_2D,m_textureID);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
 

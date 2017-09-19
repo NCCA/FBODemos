@@ -118,7 +118,7 @@ void NGLScene::initializeGL()
   // now we have associated this data we can link the shader
   shader->linkProgramObject("Colour");
   shader->use("Colour");
-  shader->setShaderParam4f("Colour",1,0,0,1);
+  shader->setUniform("Colour",1.0f,0.0f,0.0f,1.0f);
 
   // we are creating a shader called Shadow
   shader->createShaderProgram("Shadow");
@@ -180,11 +180,11 @@ void NGLScene::loadMatricesToShadowShader()
   MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
-  shader->setShaderParamFromMat4("MV",MV);
-  shader->setShaderParamFromMat4("MVP",MVP);
-  shader->setShaderParamFromMat3("normalMatrix",normalMatrix);
-  shader->setShaderParam3f("LightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
-  shader->setShaderParam4f("inColour",1,1,1,1);
+  shader->setUniform("MV",MV);
+  shader->setUniform("MVP",MVP);
+  shader->setUniform("normalMatrix",normalMatrix);
+  shader->setUniform("LightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
+  shader->setUniform("inColour",1.0f,1.0f,1.0f,1.0f);
 
   // x = x* 0.5 + 0.5
   // y = y* 0.5 + 0.5
@@ -199,7 +199,7 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat4 model=m_transform.getMatrix();
 
   ngl::Mat4 textureMatrix= model * view*proj * bias;
-  shader->setShaderParamFromMat4("textureMatrix",textureMatrix);
+  shader->setUniform("textureMatrix",textureMatrix);
 }
 
 void NGLScene::loadToLightPOVShader()
@@ -207,7 +207,7 @@ void NGLScene::loadToLightPOVShader()
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
   ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera.getVPMatrix();
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
 }
 
 void NGLScene::drawScene(std::function<void()> _shaderFunc )
@@ -311,6 +311,7 @@ void NGLScene::paintGL()
 
   // now only cull back faces
   glDisable(GL_CULL_FACE);
+
   glCullFace(GL_BACK);
   // render our scene with the shadow shader
   drawScene(std::bind(&NGLScene::loadMatricesToShadowShader,this));
@@ -330,7 +331,7 @@ void NGLScene::paintGL()
   m_transform.reset();
   m_transform.setPosition(m_lightPosition);
   ngl::Mat4 MVP=m_transform.getMatrix() *m_cam.getVPMatrix();
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
   prim->draw("cube");
 
   //----------------------------------------------------------------------------------------------------------------------
@@ -369,8 +370,8 @@ void NGLScene::createFramebufferObject()
   //glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
   //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
 
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+ // glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+ // glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
   glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 
@@ -452,7 +453,7 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Texture");
   ngl::Mat4 MVP=1;
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
   glBindTexture(GL_TEXTURE_2D,m_textureID);
 
   std::unique_ptr<ngl::AbstractVAO> quad(ngl::VAOFactory::createVAO("multiBufferVAO",GL_TRIANGLES));
