@@ -263,9 +263,12 @@ void NGLScene::paintGL()
   shader->use("Colour");
 
   m_transform.reset();
-    m_transform.setPosition(m_lightPosition);
-    ngl::Mat4 MVP=m_transform.getMatrix() * m_mouseGlobalTX *
-                    m_cam.getVPMatrix();
+  m_transform.setPosition(m_lightPosition);
+  ngl::Mat4 MVP=m_cam.getVPMatrix() *
+                m_mouseGlobalTX *
+                m_transform.getMatrix();
+
+
     shader->setUniform("MVP",MVP);
     prim->draw("cube");
 }
@@ -314,11 +317,11 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat4 MVP;
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
-  M=m_transform.getMatrix()*m_mouseGlobalTX;
-  MV=  M*m_cam.getViewMatrix();
-  MVP= M*m_cam.getVPMatrix();
+  M=m_mouseGlobalTX*m_transform.getMatrix();
+  MV=  m_cam.getViewMatrix()*M;
+  MVP= m_cam.getVPMatrix()*M;
   normalMatrix=MV;
-  normalMatrix.inverse();
+  normalMatrix.inverse().transpose();
   shader->setUniform("MV",MV);
   shader->setUniform("MVP",MVP);
   shader->setUniform("normalMatrix",normalMatrix);
@@ -334,7 +337,8 @@ void NGLScene::loadMatricesToShadowShader()
 
   ngl::Mat4 model=m_transform.getMatrix();
   // calculate MVP then multiply by the bias
-  ngl::Mat4 textureMatrix= model * m_lightCamera.getVPMatrix() * bias;
+  ngl::Mat4 textureMatrix= bias * m_lightCamera.getVPMatrix() * model;
+
   shader->setUniform("textureMatrix",textureMatrix);
 
 }
@@ -343,7 +347,7 @@ void NGLScene::loadToLightPOVShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
-  ngl::Mat4 MVP=m_transform.getMatrix()* m_lightCamera.getVPMatrix();
+  ngl::Mat4 MVP= m_lightCamera.getVPMatrix()*m_transform.getMatrix();
   shader->setUniform("MVP",MVP);
 }
 
