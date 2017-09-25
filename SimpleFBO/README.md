@@ -1,3 +1,3 @@
-#Basic FBO
+# Basic FBO
 
 A very simple FBO demo
