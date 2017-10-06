@@ -10,9 +10,9 @@ uniform mat4 textureMatrix;
 uniform vec3 lightPosition;
 uniform  vec4  inColour;
 
-layout (location =0) in  vec4  inVert;
-layout (location =1) in vec2 inUV;
-layout (location =2) in  vec3  inNormal;
+layout (location=0) in  vec4  inVert;
+layout (location=1) in vec2 inUV;
+layout (location=2) in  vec3  inNormal;
 out vec4  ShadowCoord;
 out vec4  Colour;
 flat out  vec2  ShadowScaleBias;
@@ -29,7 +29,7 @@ void main()
 	ShadowCoord   = texCoord;
 	Colour  = vec4(diffuse * inColour.rgb, inColour.a);
 	ShadowScaleBias.x=1;
-	ShadowScaleBias.y=0.02;
+  ShadowScaleBias.y=0.02;
 	gl_Position    = MVP * inVert;
 }
 

@@ -157,7 +157,7 @@ void NGLScene::initializeGL()
   // now we have associated this data we can link the shader
   shader->linkProgramObject("Shadow");
   shader->use("Shadow");
-  shader->autoRegisterUniforms("Shadow");
+  shader->setUniform("ShadowMap",0);
   // create the primitives to draw
   ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   prim->createSphere("sphere",0.5,50);
@@ -238,7 +238,6 @@ void NGLScene::paintGL()
   // bind the shadow texture
   glBindTexture(GL_TEXTURE_2D,m_textureID);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE );
 
   // now only cull back faces
 
@@ -325,8 +324,9 @@ void NGLScene::loadMatricesToShadowShader()
   shader->setUniform("MV",MV);
   shader->setUniform("MVP",MVP);
   shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("lightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
-  shader->setUniform("inColour",m_colour);
+  shader->setUniform("LightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
+  shader->setUniform("inColour",1.0f,1.0f,1.0f,1.0f);
+
   // x = x* 0.5 + 0.5
   // y = y* 0.5 + 0.5
   // z = z* 0.5 + 0.5
@@ -335,9 +335,11 @@ void NGLScene::loadMatricesToShadowShader()
   bias.scale(0.5,0.5,0.5);
   bias.translate(0.5,0.5,0.5);
 
+  ngl::Mat4 view=m_lightCamera.getViewMatrix();
+  ngl::Mat4 proj=m_lightCamera.getProjectionMatrix();
   ngl::Mat4 model=m_transform.getMatrix();
-  // calculate MVP then multiply by the bias
-  ngl::Mat4 textureMatrix= bias * m_lightCamera.getVPMatrix() * model;
+
+  ngl::Mat4 textureMatrix= bias * proj * view * model;
 
   shader->setUniform("textureMatrix",textureMatrix);
 
@@ -369,45 +371,45 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
   ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
 
   m_transform.reset();
-    // this is the same as calling
-    //  ((*this).*(_shaderFunc))(m_transformStack);
-    // but a lot more readable as to the intent
-    // see the c++ faq link in header for more details
-    m_transform.setScale(0.1f,0.1f,0.1f);
-    m_transform.setPosition(0,-0.5,0);
-    _shaderFunc();
-    prim->draw("dragon");
-    m_transform.reset();
-    m_transform.setPosition(-3,0.0,0.0);
-    _shaderFunc();
-    prim->draw("sphere");
+  // this is the same as calling
+  //  ((*this).*(_shaderFunc))(m_transformStack);
+  // but a lot more readable as to the intent
+  // see the c++ faq link in header for more details
+  m_transform.setScale(0.1f,0.1f,0.1f);
+  m_transform.setPosition(0,-0.5,0);
+  _shaderFunc();
+  prim->draw("dragon");
+  m_transform.reset();
+  m_transform.setPosition(-3,0.0,0.0);
+  _shaderFunc();
+  prim->draw("sphere");
 
   m_transform.reset();
 
-    m_transform.setPosition(3,0.0,0.0);
-    _shaderFunc();
-    prim->draw("cube");
+  m_transform.setPosition(3,0.0,0.0);
+  _shaderFunc();
+  prim->draw("cube");
 
   m_transform.reset();
-    m_transform.setPosition(0,0.0,2.0);
-    _shaderFunc();
-    prim->draw("teapot");
+  m_transform.setPosition(0,0.0,2.0);
+  _shaderFunc();
+  prim->draw("teapot");
 
   m_transform.reset();
-    m_transform.setScale(0.1f,0.1f,0.1f);
-    m_transform.setPosition(0,-0.5,-2.0);
-    _shaderFunc();
-    prim->draw("buddah");
+  m_transform.setScale(0.1f,0.1f,0.1f);
+  m_transform.setPosition(0,-0.5,-2.0);
+  _shaderFunc();
+  prim->draw("buddah");
 
   m_transform.reset();
-    m_transform.setPosition(2,0,-2.0);
-    _shaderFunc();
-    prim->draw("torus");
+  m_transform.setPosition(2,0,-2.0);
+  _shaderFunc();
+  prim->draw("torus");
 
   m_transform.reset();
-    m_transform.setPosition(0.0,-0.5,0.0);
-    _shaderFunc();
-    prim->draw("plane");
+  m_transform.setPosition(0.0,-0.5,0.0);
+  _shaderFunc();
+  prim->draw("plane");
 }
 
 
@@ -423,7 +425,7 @@ void NGLScene::timerEvent( QTimerEvent *_event )
   if(_event->timerId() == m_lightTimer && m_animate==true)
   {
     // change the light angle
-    m_lightAngle+=0.05;
+    m_lightAngle+=0.05f;
   }
 
 

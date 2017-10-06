@@ -1,0 +1,4 @@
+/Users/jmacey/NGL6Demos/FBODemos/PointShadows/CMakeFiles/edit_cache.dir
+/Users/jmacey/NGL6Demos/FBODemos/PointShadows/CMakeFiles/rebuild_cache.dir
+/Users/jmacey/NGL6Demos/FBODemos/PointShadows/CMakeFiles/Shadows.dir
+/Users/jmacey/NGL6Demos/FBODemos/PointShadows/CMakeFiles/Shadows_automoc.dir
