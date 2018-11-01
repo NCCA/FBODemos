@@ -20,5 +20,4 @@ void main()
 
 	sum = sum * ShadowScaleBias.x + ShadowScaleBias.y;
   outColour = vec4(sum * 0.25 * Colour.rgb, Colour.a);
-  //outColour=vec4(sum);
 }

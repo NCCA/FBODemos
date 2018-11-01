@@ -1,15 +1,12 @@
 #ifndef NGLSCENE_H_
 #define NGLSCENE_H_
 
-
-#include <ngl/Camera.h>
-#include <ngl/Transformation.h>
-#include <ngl/Light.h>
-#include <ngl/Text.h>
+#include <QOpenGLWidget>
 #include <QEvent>
 #include <QResizeEvent>
+#include <ngl/Transformation.h>
+#include <ngl/Text.h>
 #include <QTime>
-#include <QOpenGLWidget>
 #include "WindowParams.h"
 #include <memory>
 //----------------------------------------------------------------------------------------------------------------------
@@ -23,6 +20,7 @@
 /// @class GLWindow
 /// @brief our main glwindow widget for NGL applications all drawing elements are
 /// put in this file
+class MainWindow;
 //----------------------------------------------------------------------------------------------------------------------
 class NGLScene : public QOpenGLWidget
 {
@@ -36,7 +34,7 @@ public :
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief dtor
   //----------------------------------------------------------------------------------------------------------------------
-  ~NGLScene();
+  ~NGLScene() override;
 
 public slots :
   void setDebugQuad(bool _t){m_drawDebugQuad=_t;}
@@ -68,11 +66,13 @@ private :
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief Our Camera
   //----------------------------------------------------------------------------------------------------------------------
-  ngl::Camera m_cam;
+  ngl::Mat4 m_view;
+  ngl::Mat4 m_project;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief camera from light view
   //----------------------------------------------------------------------------------------------------------------------
-  ngl::Camera m_lightCamera;
+  ngl::Mat4 m_lightCameraView;
+  ngl::Mat4 m_lightCameraProject;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief transformation stack for the gl transformations etc
   //----------------------------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ private :
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief material colour
   //----------------------------------------------------------------------------------------------------------------------
-  ngl::Colour m_colour;
+  ngl::Vec3 m_colour;
 
 protected:
 
@@ -173,47 +173,47 @@ protected:
   /// @brief  The following methods must be implimented in the sub class
   /// this is called when the window is created
   //----------------------------------------------------------------------------------------------------------------------
-  void initializeGL();
+  void initializeGL() override;
 
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief this is called whenever the window is re-sized
   /// @param[in] _w the width of the resized window
   /// @param[in] _h the height of the resized window
   //----------------------------------------------------------------------------------------------------------------------
-  void resizeGL(const int _w, const int _h  );
+  void resizeGL(const int _w, const int _h  ) override;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief this is the main gl drawing routine which is called whenever the window needs to be re-drawn
   //----------------------------------------------------------------------------------------------------------------------
-  void paintGL();
+  void paintGL() override;
 
 private :
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief this method is called every time a mouse is moved
   /// @param _event the Qt Event structure
   //----------------------------------------------------------------------------------------------------------------------
-  void mouseMoveEvent ( QMouseEvent * _event );
+  void mouseMoveEvent ( QMouseEvent * _event ) override;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief this method is called everytime the mouse button is pressed
   /// inherited from QObject and overridden here.
   /// @param _event the Qt Event structure
   //----------------------------------------------------------------------------------------------------------------------
-  void mousePressEvent (QMouseEvent *_event);
+  void mousePressEvent (QMouseEvent *_event) override;
 
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief this method is called everytime the mouse button is released
   /// inherited from QObject and overridden here.
   /// @param _event the Qt Event structure
   //----------------------------------------------------------------------------------------------------------------------
-  void mouseReleaseEvent (QMouseEvent *_event);
+  void mouseReleaseEvent (QMouseEvent *_event) override;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief called when the timer is triggered
   //----------------------------------------------------------------------------------------------------------------------
-  void timerEvent( QTimerEvent *_event  );
+  void timerEvent( QTimerEvent *_event  ) override;
   //----------------------------------------------------------------------------------------------------------------------
   // @brief this method is called everytime the mouse wheel is moved inherited from QObject and overridden here.
   /// @param _event the Qt Event structure
   //----------------------------------------------------------------------------------------------------------------------
-  void wheelEvent(QWheelEvent *_event  );
+  void wheelEvent(QWheelEvent *_event  ) override;
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief a method to update the light
   //----------------------------------------------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ private :
   /// @brief load all the transform values to the shader from light POV
   /// @param[in] _tx the current transform to load
   //----------------------------------------------------------------------------------------------------------------------
-  void loadToLightPOVShader( );
+  void loadToLightPOVShader();
   void debugTexture(float _t, float _b, float _l, float _r);
   void createFramebufferObject();
 

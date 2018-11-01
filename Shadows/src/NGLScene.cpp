@@ -2,9 +2,6 @@
 #include <QGuiApplication>
 
 #include "NGLScene.h"
-#include <ngl/Camera.h>
-#include <ngl/Light.h>
-#include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
@@ -31,7 +28,7 @@ NGLScene::~NGLScene()
 
 void NGLScene::resizeGL( int _w, int _h )
 {
-  m_cam.setShape( 45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
+  m_project=ngl::perspective(45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
   m_win.width  = static_cast<int>( _w * devicePixelRatio() );
   m_win.height = static_cast<int>( _h * devicePixelRatio() );
 }
@@ -59,23 +56,23 @@ void NGLScene::initializeGL()
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(0,2,6);
-  ngl::Vec3 to(0,0,0);
-  ngl::Vec3 up(0,1,0);
+  ngl::Vec3 from(0.0f,2.0f,6.0f);
+  ngl::Vec3 to(0.0f,0.0f,0.0f);
+  ngl::Vec3 up(0.0f,1.0f,0.0f);
   // now load to our new camera
-  m_cam.set(from,to,up);
+  m_view=ngl::lookAt(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45,720.0f/576.0f,znear,zfar);
+  m_project=ngl::perspective(45.0f,720.0f/576.0f,znear,zfar);
 
   // now load to our light POV camera
-  m_lightCamera.set(m_lightPosition,to,up);
+  m_lightCameraView=ngl::lookAt(m_lightPosition,to,up);
   // here we set the light POV camera shape, the aspect is 1 as our
   // texture is square.
   // use the same clip plane as before but set the FOV a bit larger
   // to get slightly better shadows and the clip planes will help
   // to get rid of some of the artefacts
-  m_lightCamera.setShape(45,float(width()/height()),znear,zfar);
+  m_lightCameraProject=ngl::perspective(65.0f,1.0f,znear,zfar);
 
 
   // in this case I'm only using the light to hold the position
@@ -99,7 +96,8 @@ void NGLScene::initializeGL()
 
   // now we have associated this data we can link the shader
   shader->linkProgramObject("Texture");
-
+  shader->use("Texture");
+  shader->setUniform("tex",0);
   // we are creating a shader called Colour
   shader->createShaderProgram("Colour");
   // now we are going to create empty shaders for Frag and Vert
@@ -176,8 +174,8 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
   M=m_mouseGlobalTX*m_transform.getMatrix();
-  MV=  m_cam.getViewMatrix()*M;
-  MVP= m_cam.getVPMatrix()*M;
+  MV=  m_view*M;
+  MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
   shader->setUniform("MV",MV);
@@ -194,8 +192,8 @@ void NGLScene::loadMatricesToShadowShader()
   bias.scale(0.5,0.5,0.5);
   bias.translate(0.5,0.5,0.5);
 
-  ngl::Mat4 view=m_lightCamera.getViewMatrix();
-  ngl::Mat4 proj=m_lightCamera.getProjectionMatrix();
+  ngl::Mat4 view=m_lightCameraView;
+  ngl::Mat4 proj=m_lightCameraProject;
   ngl::Mat4 model=m_transform.getMatrix();
 
   ngl::Mat4 textureMatrix= bias * proj * view * model;
@@ -207,7 +205,7 @@ void NGLScene::loadToLightPOVShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
-  ngl::Mat4 MVP=m_lightCamera.getVPMatrix()*m_transform.getMatrix();
+  ngl::Mat4 MVP=m_lightCameraProject*m_lightCameraView*m_transform.getMatrix();
   shader->setUniform("MVP",MVP);
 }
 
@@ -331,7 +329,7 @@ void NGLScene::paintGL()
   shader->use("Colour");
   m_transform.reset();
   m_transform.setPosition(m_lightPosition);
-  ngl::Mat4 MVP=m_cam.getVPMatrix()*m_transform.getMatrix() ;
+  ngl::Mat4 MVP=m_project*m_view*m_transform.getMatrix() ;
   shader->setUniform("MVP",MVP);
   prim->draw("cube");
 
@@ -431,7 +429,7 @@ void NGLScene::updateLight()
   m_lightAngle+=0.05;
   m_lightPosition.set(m_lightXoffset*cos(m_lightAngle),m_lightYPos,m_lightXoffset*sin(m_lightAngle));
   // now set this value and load to the shader
-  m_lightCamera.set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
+  m_lightCameraView=ngl::lookAt(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
 }
 
 void NGLScene::timerEvent(QTimerEvent *_event )
@@ -449,10 +447,9 @@ void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Texture");
-  ngl::Mat4 MVP=1;
-  shader->setUniform("MVP",MVP);
+  shader->setUniform("tex",0);
   glBindTexture(GL_TEXTURE_2D,m_textureID);
-
+  glGenerateMipmap(GL_TEXTURE_2D);
   std::unique_ptr<ngl::AbstractVAO> quad(ngl::VAOFactory::createVAO("multiBufferVAO",GL_TRIANGLES));
   std::array<float,18> vert ;	// vertex array
   std::array<float,12> uv ;	// uv array

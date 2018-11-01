@@ -11,8 +11,8 @@ uniform vec3 lightPosition;
 uniform  vec4  inColour;
 
 layout (location=0) in  vec4  inVert;
-layout (location=1) in vec2 inUV;
-layout (location=2) in  vec3  inNormal;
+layout (location=1) in  vec3  inNormal;
+layout (location=2) in vec2 inUV;
 out vec4  ShadowCoord;
 out vec4  Colour;
 flat out  vec2  ShadowScaleBias;

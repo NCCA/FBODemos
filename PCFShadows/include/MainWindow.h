@@ -2,7 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "NGLScene.h"
+#include <QSurfaceFormat>
+class NGLScene;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// @file MainWindow.h
@@ -30,18 +31,19 @@ protected :
   /// @brief override the keyPressEvent inherited from QObject so we can handle key presses.
   /// @param [in] _event the event to process
   //----------------------------------------------------------------------------------------------------------------------
-  void keyPressEvent(QKeyEvent *_event );
+  void keyPressEvent(QKeyEvent *_event ) override;
 
 public:
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief constructor
   /// @param _parent the parent window the for this window
   //----------------------------------------------------------------------------------------------------------------------
-  explicit MainWindow(QWidget *_parent = 0 );
+  explicit MainWindow(QWidget *_parent = nullptr );
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief  dtor free up the GLWindow and all resources
   //----------------------------------------------------------------------------------------------------------------------
-  ~MainWindow();
+  ~MainWindow() override;
+  Ui::MainWindow *m_ui;
 private slots :
 
 private:
@@ -49,7 +51,6 @@ private:
   ///  @brief our gl window created in GLWindow.h
   //----------------------------------------------------------------------------------------------------------------------
   NGLScene *m_gl;
-  Ui::MainWindow *m_ui;
 
 
 };

@@ -1,17 +1,13 @@
+#include <QColorDialog>
 #include "NGLScene.h"
 #include <iostream>
-#include <ngl/Camera.h>
-#include <ngl/Light.h>
 #include <ngl/Mat4.h>
-
 #include <ngl/Transformation.h>
-#include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/VAOFactory.h>
 #include <ngl/MultiBufferVAO.h>
 #include <ngl/ShaderLib.h>
-#include <QColorDialog>
 
 #include <array>
 
@@ -35,14 +31,14 @@ NGLScene::NGLScene(QWidget *_parent ): QOpenGLWidget( _parent )
   m_lightZoffset=8.0f;
   m_drawDebugQuad=true;
   m_textureSize=512;
-  m_zNear=0.01f;
-  m_zfar=100;
+  m_zNear=0.5;;
+  m_zfar=20.0f;
   m_fov=45.0f;
   m_polyOffsetFactor=0.0f;
   m_polyOffsetScale=0.0f;
   m_textureMinFilter= GL_NEAREST;
   m_textureMagFilter=  GL_NEAREST;
-  m_colour.set(1,1,1,1);
+  m_colour.set(1.0f,1.0f,1.0f);
 }
 
 NGLScene::~NGLScene()
@@ -77,20 +73,20 @@ void NGLScene::initializeGL()
   ngl::Vec3 to(0.0f,0.0f,0.0f);
   ngl::Vec3 up(0.0f,1.0f,0.0f);
   // now load to our new camera
-  m_cam.set(from,to,up);
+  m_view=ngl::lookAt(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45.0f,720.0f/576.0f,m_zNear,m_zfar);
+  m_project=ngl::perspective(45.0f,720.0f/576.0f,m_zNear,m_zfar);
 
   // now load to our light POV camera
 
-  m_lightCamera.set(m_lightPosition,to,up);
+  m_lightCameraView=ngl::lookAt(m_lightPosition,to,up);
   // here we set the light POV camera shape, the aspect is 1 as our
   // texture is square.
   // use the same clip plane as before but set the FOV a bit larger
   // to get slightly better shadows and the clip planes will help
   // to get rid of some of the artefacts
-  m_lightCamera.setShape(m_fov,1.0f,m_zNear,m_zfar);
+  m_lightCameraProject=ngl::perspective(m_fov,1.0f,m_zNear,m_zfar);
 
 
   // in this case I'm only using the light to hold the position
@@ -184,7 +180,7 @@ void NGLScene::initializeGL()
 // The new size is passed in width and height.
 void NGLScene::resizeGL( int _w, int _h )
 {
-  m_cam.setShape( 45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
+  m_project=ngl::perspective( 45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
   m_win.width  = static_cast<int>( _w * devicePixelRatio() );
   m_win.height = static_cast<int>( _h * devicePixelRatio() );
 }
@@ -218,7 +214,7 @@ void NGLScene::paintGL()
   glEnable(GL_POLYGON_OFFSET_FILL);
   glPolygonOffset(m_polyOffsetFactor,m_polyOffsetScale );
   // set the shape of the camera before rendering
-  m_lightCamera.setShape(m_fov,1.0,m_zNear,m_zfar);
+  m_lightCameraProject=ngl::perspective(m_fov,1.0f,m_zNear,m_zfar);
   // draw the scene from the POV of the light
   drawScene(std::bind(&NGLScene::loadToLightPOVShader,this));
   //----------------------------------------------------------------------------------------------------------------------
@@ -263,7 +259,7 @@ void NGLScene::paintGL()
 
   m_transform.reset();
   m_transform.setPosition(m_lightPosition);
-  ngl::Mat4 MVP=m_cam.getVPMatrix() *
+  ngl::Mat4 MVP=m_project*m_view *
                 m_mouseGlobalTX *
                 m_transform.getMatrix();
 
@@ -317,15 +313,15 @@ void NGLScene::loadMatricesToShadowShader()
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
   M=m_mouseGlobalTX*m_transform.getMatrix();
-  MV=  m_cam.getViewMatrix()*M;
-  MVP= m_cam.getVPMatrix()*M;
+  MV=  m_view*M;
+  MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
   shader->setUniform("MV",MV);
   shader->setUniform("MVP",MVP);
   shader->setUniform("normalMatrix",normalMatrix);
   shader->setUniform("LightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
-  shader->setUniform("inColour",1.0f,1.0f,1.0f,1.0f);
+  shader->setUniform("inColour",m_colour.m_r,m_colour.m_g,m_colour.m_b,1.0f);
 
   // x = x* 0.5 + 0.5
   // y = y* 0.5 + 0.5
@@ -335,8 +331,8 @@ void NGLScene::loadMatricesToShadowShader()
   bias.scale(0.5,0.5,0.5);
   bias.translate(0.5,0.5,0.5);
 
-  ngl::Mat4 view=m_lightCamera.getViewMatrix();
-  ngl::Mat4 proj=m_lightCamera.getProjectionMatrix();
+  ngl::Mat4 view=m_lightCameraView;
+  ngl::Mat4 proj=m_lightCameraProject;
   ngl::Mat4 model=m_transform.getMatrix();
 
   ngl::Mat4 textureMatrix= bias * proj * view * model;
@@ -349,7 +345,7 @@ void NGLScene::loadToLightPOVShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Colour");
-  ngl::Mat4 MVP= m_lightCamera.getVPMatrix()*m_transform.getMatrix();
+  ngl::Mat4 MVP= m_lightCameraProject*m_lightCameraView*m_transform.getMatrix();
   shader->setUniform("MVP",MVP);
 }
 
@@ -428,22 +424,20 @@ void NGLScene::timerEvent( QTimerEvent *_event )
     m_lightAngle+=0.05f;
   }
 
-
-m_lightPosition.set(m_lightXoffset*cosf(m_lightAngle),m_lightYPos,m_lightXoffset*sinf(m_lightAngle));
-// now set this value and load to the shader
-m_lightCamera.set(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
+  m_lightPosition.set(m_lightXoffset*cosf(m_lightAngle),m_lightYPos,m_lightXoffset*sinf(m_lightAngle));
+  // now set this value and load to the shader
+  m_lightCameraView=ngl::lookAt(m_lightPosition,ngl::Vec3(0,0,0),ngl::Vec3(0,1,0));
 
     // re-draw GL
-update();
+  update();
 }
 
 void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("Texture");
-  ngl::Mat4 MVP=1;
-  shader->setUniform("MVP",MVP);
   glBindTexture(GL_TEXTURE_2D,m_textureID);
+  glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
 
   std::unique_ptr< ngl::AbstractVAO>quad( ngl::VAOFactory::createVAO("multiBufferVAO",GL_TRIANGLES));
@@ -537,7 +531,7 @@ void NGLScene::setColour()
   if( colour.isValid())
   {
     ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-    (*shader)["Phong"]->use();
+    (*shader)["Shadow"]->use();
     m_colour.m_r=colour.redF();
     m_colour.m_g=colour.greenF();
     m_colour.m_b=colour.blueF();

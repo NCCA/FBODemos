@@ -50,21 +50,19 @@ vec4 pointLight()
 	vec4 specular=vec4(0);
 	if (lambertTerm > 0.0)
 	{
-	float d;            // distance from surface to light position
-	vec3 VP;            // direction from surface to light position
+    float d;            // distance from surface to light position
+    vec3 VP;            // direction from surface to light position
 
-	// Compute vector from surface to light position
-	VP = vec3 (light.position) - vPosition;
+    // Compute vector from surface to light position
+    VP = vec3 (light.position) - vPosition;
 
-	// Compute distance between surface and light position
-		d = length (VP);
-
-
-		diffuse+=material.diffuse*light.diffuse*lambertTerm;
-		ambient+=material.ambient*light.ambient;
-		halfV = normalize(halfVector);
-		ndothv = max(dot(N, halfV), 0.0);
-		specular+=material.specular*light.specular*pow(ndothv, material.shininess);
+    // Compute distance between surface and light position
+    d = length (VP);
+    diffuse+=material.diffuse*light.diffuse*lambertTerm;
+    ambient+=material.ambient*light.ambient;
+    halfV = normalize(halfVector);
+    ndothv = max(dot(N, halfV), 0.0);
+    specular+=material.specular*light.specular*pow(ndothv, material.shininess);
 	}
 return ambient + diffuse + specular;
 }

@@ -2,9 +2,6 @@
 #include <QGuiApplication>
 
 #include "NGLScene.h"
-#include <ngl/Camera.h>
-#include <ngl/Light.h>
-#include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
@@ -14,9 +11,7 @@ NGLScene::NGLScene()
   setTitle("Simple Framebuffer Object Demo");
   m_win.width=width();
   m_win.height=height();
-
 }
-
 
 NGLScene::~NGLScene()
 {
@@ -24,7 +19,6 @@ NGLScene::~NGLScene()
   // clear out our buffers
   glDeleteTextures(1,&m_textureID);
   glDeleteFramebuffers(1,&m_fboID);
-
 }
 
 const static int TEXTURE_WIDTH=1024;
@@ -75,7 +69,7 @@ void NGLScene::createFramebufferObject()
 
 void NGLScene::resizeGL( int _w, int _h )
 {
-  m_cam.setShape( 45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
+  m_project=ngl::perspective(45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
   m_win.width  = static_cast<int>( _w * devicePixelRatio() );
   m_win.height = static_cast<int>( _h * devicePixelRatio() );
 }
@@ -91,6 +85,16 @@ void NGLScene::initializeGL()
   glEnable(GL_DEPTH_TEST);
   // enable multisampling for smoother drawing
   glEnable(GL_MULTISAMPLE);
+  // This is a static camera so it only needs to be set once
+  // First create Values for the camera position
+  ngl::Vec3 from(2,2,2);
+  ngl::Vec3 to(0,0,0);
+  ngl::Vec3 up(0,1,0);
+  // now load to our new camera
+  m_view=ngl::lookAt(from,to,up);
+  // set the shape using FOV 45 Aspect Ratio based on Width and Height
+  // The final two are near and far clipping planes of 0.5 and 10
+  m_project=ngl::perspective(45.0f,720.0f/576.0f,0.05f,350.0f);
   // now to load the shader and set the values
   // grab an instance of shader manager
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
@@ -113,31 +117,17 @@ void NGLScene::initializeGL()
   shader->linkProgramObject("Phong");
   // and make it active ready to load values
   (*shader)["Phong"]->use();
-  // the shader will use the currently active material and light0 so set them
-  ngl::Material m(ngl::STDMAT::GOLD);
-  // load our material values to the shader into the structure material (see Vertex shader)
-  m.loadToShader("material");
-  // Now we will create a basic Camera from the graphics library
-  // This is a static camera so it only needs to be set once
-  // First create Values for the camera position
-  ngl::Vec3 from(1,1,1);
-  ngl::Vec3 to(0,0,0);
-  ngl::Vec3 up(0,1,0);
-  // now load to our new camera
-  m_cam.set(from,to,up);
-  // set the shape using FOV 45 Aspect Ratio based on Width and Height
-  // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45,(float)720.0/576.0,0.05,350);
-  shader->setUniform("viewerPos",m_cam.getEye().toVec3());
-  // now create our light this is done after the camera so we can pass the
-  // transpose of the projection matrix to the light to do correct eye space
-  // transformations
-  ngl::Mat4 iv=m_cam.getViewMatrix();
-  iv.transpose();
-  ngl::Light light(ngl::Vec3(-2,5,2),ngl::Colour(1,1,1,1),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
-  light.setTransform(iv);
-  // load these values to the shader as well
-  light.loadToShader("light");
+  ngl::Vec4 lightPos(-2.0f,5.0f,2.0f,0.0f);
+  shader->setUniform("light.position",lightPos);
+  shader->setUniform("light.ambient",0.0f,0.0f,0.0f,1.0f);
+  shader->setUniform("light.diffuse",1.0f,1.0f,1.0f,1.0f);
+  shader->setUniform("light.specular",0.8f,0.8f,0.8f,1.0f);
+  // gold like phong material
+  shader->setUniform("material.ambient",0.274725f,0.1995f,0.0745f,0.0f);
+  shader->setUniform("material.diffuse",0.75164f,0.60648f,0.22648f,0.0f);
+  shader->setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
+  shader->setUniform("material.shininess",51.2f);
+  shader->setUniform("viewerPos",from);
 
   // now load our texture shader
   shader->createShaderProgram("TextureShader");
@@ -179,9 +169,9 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat4 MVP;
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
-  M=m_mouseGlobalTX*m_transform.getMatrix();
-  MV=  m_cam.getViewMatrix()*M;
-  MVP= m_cam.getVPMatrix()*M;
+  M=m_transform.getMatrix();
+  MV=  m_view*M;
+  MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
   shader->setUniform("MV",MV);
@@ -250,15 +240,14 @@ void NGLScene::paintGL()
   // get the new shader and set the new viewport size
   shader->use("TextureShader");
   // this takes into account retina displays etc
-  glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
+  glViewport(0, 0, static_cast<GLsizei>(width() * devicePixelRatio()), static_cast<GLsizei>(height() * devicePixelRatio()));
   ngl::Mat4 MVP;
   m_transform.reset();
-  MVP= m_cam.getVPMatrix()*m_mouseGlobalTX;
+  MVP= m_project*m_view*m_mouseGlobalTX;
   shader->setUniform("MVP",MVP);
   prim->draw("plane");
-
   m_transform.setPosition(0,1,0);
-  MVP= m_cam.getVPMatrix()*m_mouseGlobalTX*m_transform.getMatrix();
+  MVP= m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
   shader->setUniform("MVP",MVP);
   prim->draw("sphere");
   //----------------------------------------------------------------------------------------------------------------------
