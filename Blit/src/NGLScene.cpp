@@ -9,7 +9,7 @@
 #include <ngl/VAOFactory.h>
 NGLScene::NGLScene()
 {
-  setTitle("Simple Framebuffer Object Demo");
+  setTitle("Blit Framebuffer use 1-8 for full frame, A for all");
 }
 
 NGLScene::~NGLScene()
@@ -34,7 +34,7 @@ void NGLScene::createTextureObjects(GLuint _num)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    //glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_win.width, m_win.height);
+    //glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGB, m_win.width, m_win.height);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_win.width, m_win.height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
   }
@@ -148,10 +148,37 @@ void NGLScene::paintGL()
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER,defaultFramebufferObject());
   glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fboID);
-  glReadBuffer(GL_COLOR_ATTACHMENT0+m_bufferIndex);
-  glBlitFramebuffer(0,0,m_win.width,m_win.height,0,0,m_win.width,m_win.height,GL_COLOR_BUFFER_BIT,GL_NEAREST);
+  if(m_bufferIndex!=8)
+  {
+    glReadBuffer(GL_COLOR_ATTACHMENT0+m_bufferIndex);
+    glBlitFramebuffer(0,0,m_win.width,m_win.height,0,0,m_win.width,m_win.height,GL_COLOR_BUFFER_BIT,GL_NEAREST);
 
+  }
+  else
+  {
+    auto w4=m_win.width/4;
+    auto h2=m_win.height/2;
+    for(int i=0; i<8; ++i)
+    {
+      glReadBuffer(GL_COLOR_ATTACHMENT0+i);
+      if(i<4)
+      {
 
+        glBlitFramebuffer(w4*i,0,w4*i+w4,h2,
+                          w4*i,0,w4*i+w4,h2
+              ,GL_COLOR_BUFFER_BIT,GL_NEAREST);
+
+      }
+      else
+      {
+
+        glBlitFramebuffer(w4*(i-4),h2,w4*(i-4)+w4,m_win.height,
+                          w4*(i-4),h2,w4*(i-4)+w4,m_win.height
+              ,GL_COLOR_BUFFER_BIT,GL_NEAREST);
+
+      }
+    }
+  }
  }
 
 void NGLScene::createScreenQuad()
@@ -176,14 +203,6 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   {
   // escape key to quite
   case Qt::Key_Escape : QGuiApplication::exit(EXIT_SUCCESS); break;
-  // turn on wirframe rendering
-  case Qt::Key_W : glPolygonMode(GL_FRONT_AND_BACK,GL_LINE); break;
-  // turn off wire frame
-  case Qt::Key_S : glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); break;
-  // show full screen
-  case Qt::Key_F : showFullScreen(); break;
-  // show windowed
-  case Qt::Key_N : showNormal(); break;
   case Qt::Key_1 : m_bufferIndex=0; break;
   case Qt::Key_2 : m_bufferIndex=1; break;
   case Qt::Key_3 : m_bufferIndex=2; break;
@@ -192,6 +211,7 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_6 : m_bufferIndex=5; break;
   case Qt::Key_7 : m_bufferIndex=6; break;
   case Qt::Key_8 : m_bufferIndex=7; break;
+  case Qt::Key_A : m_bufferIndex=8; break;
   default : break;
   }
   // finally update the GLWindow and re-draw
