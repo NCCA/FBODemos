@@ -116,10 +116,18 @@ private:
     void timerEvent(QTimerEvent *) override;
 
     void createScreenQuad();
+    void loadDOFUniforms();
     std::unique_ptr<ngl::AbstractVAO> m_screenQuad;
 
     std::unique_ptr<FBO> m_renderFBO;
     std::unique_ptr<FBO> m_blurFBO;
+
+    float m_fstop=2.8f;
+    int m_av=3; // used in f-stop calc where fstop=sqrtf(2^m_av)
+    float m_focalLenght=1.0f;
+    float m_focalDistance=2.0f;
+    float m_focusDistance=5.0f;
+
 };
 
 

@@ -10,7 +10,7 @@
 #include <ngl/Image.h>
 NGLScene::NGLScene()
 {
-  setTitle("Simple Framebuffer Object Demo");
+  setTitle("Depth of Field");
 }
 
 NGLScene::~NGLScene()
@@ -31,6 +31,23 @@ void NGLScene::resizeGL( int _w, int _h )
 
 auto ScreenQuad="ScreenQuad";
 auto DOFShader="DOFShader";
+
+void NGLScene::loadDOFUniforms()
+{
+  auto shader=ngl::ShaderLib::instance();
+  shader->use(DOFShader);
+
+  float magnification = m_focalLenght / abs(m_focalDistance - m_focalLenght);
+  float blur = m_focalLenght * magnification / m_fstop;
+  float ppm = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
+  shader->setUniform("depthRange",ngl::Vec2(0.1f,50.0f));
+  shader->setUniform("blurCoefficient",blur);
+  shader->setUniform("PPM",ppm);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  shader->setUniform("focusDistance",m_focusDistance);
+
+}
+
 void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
@@ -44,7 +61,7 @@ void NGLScene::initializeGL()
   glEnable(GL_MULTISAMPLE);
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(2,2,2);
+  ngl::Vec3 from(0,2,10);
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   m_win.width  = static_cast<int>( width() * devicePixelRatio() );
@@ -79,23 +96,7 @@ void NGLScene::initializeGL()
 
   shader->loadShader(ScreenQuad,"shaders/ScreenQuadVertex.glsl","shaders/ScreenQuadFragment.glsl");
   shader->loadShader(DOFShader,"shaders/DOFVertex.glsl","shaders/DOFFragment.glsl");
-  shader->use(DOFShader);
-
-  float FOCAL_LENGTH = 1.0f;
-  float FOCUS_DISTANCE = 2.0f;
-  float MAGNIFICATION = FOCAL_LENGTH / abs(FOCUS_DISTANCE - FOCAL_LENGTH);
-  float FSTOP = 2.8f;
-  float BLUR_COEFFICIENT = FOCAL_LENGTH * MAGNIFICATION / FSTOP;
-  float PPM = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
-  shader->setUniform("uDepthRange",ngl::Vec2(0.1f,50.0f));
-  shader->setUniform("uBlurCoefficient",BLUR_COEFFICIENT);
-  shader->setUniform("uPPM",PPM);
-  shader->setUniform("uResolution",ngl::Vec2(m_win.width,m_win.height));
-  shader->setUniform("uFocusDistance",5.0f);
-//  // now create our texture object
-//  createTextureObject();
-//  // now the fbo
-//  createFramebufferObject();
+  loadDOFUniforms();
   m_renderFBO=FBO::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_renderFBO->bind();
   m_renderFBO->addColourAttachment("renderTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
@@ -223,16 +224,24 @@ void NGLScene::paintGL()
   // if we want a different camera we wouldset this here
   // rotate the teapot
   m_transform.reset();
+  static float s_rot=0.1f;
 //  m_transform.setScale(0.8f,0.8f,0.8f);
-  for (float z=-10.0f; z<10.0f; z+=1.5f)
+  for (float z=-10.0f; z<10.0f; z+=1.8f)
   {
     for(float x=-10.0f; x<10.0f; x+=1.8f)
     {
+      m_transform.setRotation(0,s_rot,0);
       m_transform.setPosition(x,0.0f,z);
       loadMatricesToShader(m_mouseGlobalTX);
       prim->draw("teapot");
     }
   }
+  s_rot+=1.0f;
+  m_transform.reset();
+  m_transform.setPosition(0,1.0f,m_focusDistance);
+  m_transform.setScale(0.1f,0.1f,0.1f);
+  loadMatricesToShader(m_mouseGlobalTX);
+  prim->draw("cube");
  // ngl::Image::saveFrameBufferToFile("pass1.png",0,0,m_win.width,m_win.height);
   m_renderFBO->unbind();
 
@@ -246,14 +255,15 @@ void NGLScene::paintGL()
   //glClear(GL_DEPTH_BUFFER_BIT);
 
   shader->use(DOFShader);
+  loadDOFUniforms();
 //  // HORIZONTAL BLUR
-  shader->setUniform("uColor",0);
-  shader->setUniform("uDepth",1);
+  shader->setUniform("colourSampler",0);
+  shader->setUniform("depthSampler",1);
   shader->setUniform("uTexelOffset",1.0f,0.0f);
   m_screenQuad->draw();
   //ngl::Image::saveFrameBufferToFile("pass2.png",0,0,m_win.width,m_win.height);
   shader->setUniform("uTexelOffset",0.0f,1.0f);
-  shader->setUniform("uColor",2);
+  shader->setUniform("colourSampler",2);
   m_screenQuad->draw();
 
   //----------------------------------------------------------------------------------------------------------------------
@@ -310,6 +320,16 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_F : showFullScreen(); break;
   // show windowed
   case Qt::Key_N : showNormal(); break;
+
+  case Qt::Key_Left : m_av-=1; m_fstop=sqrtf(pow(2,m_av)); break;
+  case Qt::Key_Right : m_av+=1; m_fstop=sqrtf(pow(2,m_av));  break;
+  case Qt::Key_Up : m_focalDistance +=0.1f; break;
+  case Qt::Key_Down : m_focalDistance -=0.1f; break;
+  case Qt::Key_I : m_focalLenght +=0.1f; break;
+  case Qt::Key_O : m_focalLenght -=0.1f; break;
+  case Qt::Key_K : m_focusDistance +=0.1f; break;
+  case Qt::Key_L : m_focusDistance -=0.1f; break;
+
   default : break;
   }
   // finally update the GLWindow and re-draw
