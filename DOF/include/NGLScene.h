@@ -1,11 +1,11 @@
 #ifndef NGLSCENE_H_
 #define NGLSCENE_H_
-#include <QOpenGLWindow>
 #include <ngl/Transformation.h>
 #include <ngl/Text.h>
 #include <ngl/Mat4.h>
 #include <ngl/AbstractVAO.h>
-#include "FBO.h"
+#include "FrameBufferObject.h"
+#include <QOpenGLWindow>
 #include <memory>
 #include "WindowParams.h"
 //----------------------------------------------------------------------------------------------------------------------
@@ -119,8 +119,8 @@ private:
     void loadDOFUniforms();
     std::unique_ptr<ngl::AbstractVAO> m_screenQuad;
 
-    std::unique_ptr<FBO> m_renderFBO;
-    std::unique_ptr<FBO> m_blurFBO;
+    std::unique_ptr<FrameBufferObject> m_renderFBO;
+    std::unique_ptr<FrameBufferObject> m_blurFBO;
 
     float m_fstop=2.8f;
     int m_av=3; // used in f-stop calc where fstop=sqrtf(2^m_av)

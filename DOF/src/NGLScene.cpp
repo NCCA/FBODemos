@@ -74,7 +74,7 @@ void NGLScene::initializeGL()
   m_project=ngl::perspective(45.0f,720.0f/576.0f,0.05f,10.0f);
   // now to load the shader and set the values
   // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+  auto *shader=ngl::ShaderLib::instance();
   // we are creating a shader called Phong
   shader->loadShader("Phong","shaders/PhongVert.glsl","shaders/PhongFrag.glsl");
   // and make it active ready to load values
@@ -92,12 +92,12 @@ void NGLScene::initializeGL()
   shader->setUniform("viewerPos",from);
 
   // now load our texture shader
-  shader->loadShader("TextureShader","shaders/TextureVertex.glsl","shaders/TextureFragment.glsl");
+//  shader->loadShader("TextureShader","shaders/TextureVertex.glsl","shaders/TextureFragment.glsl");
 
   shader->loadShader(ScreenQuad,"shaders/ScreenQuadVertex.glsl","shaders/ScreenQuadFragment.glsl");
   shader->loadShader(DOFShader,"shaders/DOFVertex.glsl","shaders/DOFFragment.glsl");
   loadDOFUniforms();
-  m_renderFBO=FBO::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_renderFBO->bind();
   m_renderFBO->addColourAttachment("renderTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
                                    GLTextureDataType::UNSIGNED_BYTE,
@@ -106,7 +106,8 @@ void NGLScene::initializeGL()
 
   m_renderFBO->addDepthBuffer(GLTextureDepthFormats::DEPTH_COMPONENT16,GLTextureDataType::FLOAT,
                               GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
-                              GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE
+                              GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,
+                              true
                               );
 
   ngl::msg->addMessage(fmt::format("RenderTargetID {0}",m_renderFBO->getTextureID("renderTarget")));
@@ -114,7 +115,7 @@ void NGLScene::initializeGL()
   ngl::msg->addMessage(fmt::format("Is complete {0}",m_renderFBO->isComplete()));
 
 
-  m_blurFBO=FBO::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_blurFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_blurFBO->bind();
   m_blurFBO->addColourAttachment("blurTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
                                    GLTextureDataType::UNSIGNED_BYTE,
@@ -219,7 +220,6 @@ void NGLScene::paintGL()
   m_renderFBO->setViewport();
   glClearColor(0,0,0,1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
   // if we want a different camera we wouldset this here
   // rotate the teapot

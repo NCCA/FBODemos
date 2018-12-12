@@ -17,11 +17,11 @@ CONFIG-=app_bundle
 # Auto include all .cpp files in the project src directory (can specifiy individually if required)
 SOURCES+= $$PWD/src/NGLScene.cpp    \
           $$PWD/src/NGLSceneMouseControls.cpp \
-          $$PWD/src/FBO.cpp \
+          $$PWD/src/FrameBufferObject.cpp \
 					$$PWD/src/main.cpp
 # same for the .h files
 HEADERS+= $$PWD/include/NGLScene.h \
-          $$PWD/include/FBO.h \
+          $$PWD/include/FrameBufferObject.h \
           $$PWD/include/TextureTypes.h \
           $$PWD/include/WindowParams.h
 # and add the include dir into the search path for Qt and make
