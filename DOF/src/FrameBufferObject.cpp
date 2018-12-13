@@ -29,8 +29,8 @@ FrameBufferObject::~FrameBufferObject()
   }
 }
 
-bool FrameBufferObject::addDepthBuffer( GLTextureDepthFormats _format, GLTextureDataType _type, GLTextureMinFilter _min,
-                          GLTextureMagFilter _mag,GLTextureWrap _swap, GLTextureWrap _twrap, bool _immutable)
+bool FrameBufferObject::addDepthBuffer(GLTextureDepthFormats _format, GLTextureMinFilter _min,
+                          GLTextureMagFilter _mag, GLTextureWrap _swrap, GLTextureWrap _twrap, bool _immutable)
 {
   if(m_bound!=true)
   {
@@ -42,20 +42,20 @@ bool FrameBufferObject::addDepthBuffer( GLTextureDepthFormats _format, GLTexture
   // set params
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, toGLType(_mag));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, toGLType(_min));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, toGLType(_swap));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, toGLType(_swrap));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, toGLType(_twrap));
   if(_immutable == true)
     glTexStorage2D(GL_TEXTURE_2D, 1, toGLType(_format), m_width, m_height);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, toGLType(_format), m_width, m_height, 0, GL_DEPTH_COMPONENT, toGLType(_type), nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, toGLType(_format), m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthBufferID, 0);
   return true;
 }
 bool FrameBufferObject::addColourAttachment(const std::string &_name, GLenum _attachment,
-                              GLTextureFormat _format,GLTextureInternalFormat _iformat,
+                              GLTextureFormat _format, GLTextureInternalFormat _iformat,
                               GLTextureDataType _type, GLTextureMinFilter _min, GLTextureMagFilter _mag,
-                              GLTextureWrap _swap, GLTextureWrap _twrap)
+                              GLTextureWrap _swap, GLTextureWrap _twrap, bool _immutable)
 {
   if(m_bound!=true)
   {
@@ -71,7 +71,10 @@ bool FrameBufferObject::addColourAttachment(const std::string &_name, GLenum _at
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, toGLType(_min));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, toGLType(_swap));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, toGLType(_twrap));
-  glTexImage2D(GL_TEXTURE_2D, 0, toGLType(_iformat),m_width, m_height, 0, toGLType(_format), toGLType(_type), nullptr);
+  if(_immutable ==true)
+    glTexStorage2D(GL_TEXTURE_2D, 1, toGLType(_iformat), m_width, m_height);
+  else
+    glTexImage2D(GL_TEXTURE_2D, 0, toGLType(_iformat),m_width, m_height, 0, toGLType(_format), toGLType(_type), nullptr);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+_attachment, GL_TEXTURE_2D, id, 0);
   ngl::msg->addMessage(fmt::format("Adding Texture {0} {1}",_name,id));
   TextureAttachment t;

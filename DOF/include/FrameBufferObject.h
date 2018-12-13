@@ -5,47 +5,103 @@
 #include <unordered_map>
 #include <memory>
 #include "TextureTypes.h"
+//----------------------------------------------------------------------------------------------------------------------
+// The FrameBufferObject class encapsulates an OpenGL FrameBufferObject and the associated textures
+// It is also possible to attach textures created elsewhere to the FBO and either a Depth or
+// Depth Stencil. This class is designed to be as Flexible as Possible but can not deal with all
+// possible circumstances so it may still be necessary to create your own Framebuffers
+//
+//----------------------------------------------------------------------------------------------------------------------
 
-/* The FrameBufferObject class encapsulates an OpenGL FrameBufferObject and the associated textures
- * It is also possible to attach textures created elsewhere to the FBO and either a Depth or
- * Depth Stencil. This class is designed to be as Flexible as Possible but can not deal with all
- * possible circumstances so it may still be necessary to create your own Framebuffers
- */
 class FrameBufferObject
 {
   public :
+
+    //----------------------------------------------------------------------------------------------------------------------
+    // decide what the FBO Target is we will default where possible to GL_FRAMEBUFFER
+    //----------------------------------------------------------------------------------------------------------------------
     enum class Target : GLenum {FRAMEBUFFER=GL_FRAMEBUFFER,DRAW=GL_DRAW_FRAMEBUFFER,READ=GL_READ_FRAMEBUFFER};
+    //----------------------------------------------------------------------------------------------------------------------
     // we can only create on the heap as a smart pointer
     // @param _w the width of the Framebuffer
     // @param _h the height of the Framebuffer
-    // @param number of Colour attchments 8 is the min number
+    // @param number of Colour attchments 8 is the min number (spec mandates) so will use this as
+    // default.
+    //----------------------------------------------------------------------------------------------------------------------
     static std::unique_ptr<FrameBufferObject> create(int _w, int _h, size_t _numAttatchments=8);
-    // make non-copyable
+    //----------------------------------------------------------------------------------------------------------------------
+    // make non-copyable using rule of 5
+    //----------------------------------------------------------------------------------------------------------------------
     FrameBufferObject(const FrameBufferObject &)=delete;
     FrameBufferObject & operator=(const FrameBufferObject &)=delete;
     FrameBufferObject(FrameBufferObject &&)=delete;
     FrameBufferObject & operator=(FrameBufferObject &&)=delete;
+    //----------------------------------------------------------------------------------------------------------------------
+    // Dtor will release all textures associated with the FBO so be careful if sharing them.
+    //----------------------------------------------------------------------------------------------------------------------
     ~FrameBufferObject();
-    bool addDepthBuffer(GLTextureDepthFormats _format, GLTextureDataType _type, GLTextureMinFilter _min,
-                        GLTextureMagFilter _mag,GLTextureWrap _swap, GLTextureWrap _twrap, bool _immutable=false);
+    //----------------------------------------------------------------------------------------------------------------------
+    // this will add a depth buffer using a texture attachment this will always use an internal float buffer
+    /// @param _format the format for the depth component (see  GLTextureDepthFormats for enumerations to GL types)
+    /// @param _min the minificaction filter mode of the texture attached
+    /// @param _mag the magnification mode of the texture attached
+    /// @param _swrap texture wrap mode in s
+    /// @param _twrap texture wrap mode in t
+    /// _immutable Choose to use either faster immutable storage (glTexStorage) or slower mutable
+    /// storage, glTexImage2d
+    //----------------------------------------------------------------------------------------------------------------------
+    bool addDepthBuffer(GLTextureDepthFormats _format,  GLTextureMinFilter _min,
+                        GLTextureMagFilter _mag,GLTextureWrap _swrap,
+                        GLTextureWrap _twrap, bool _immutable=false);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     bool addDepthStencilBuffer();
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     bool addColourAttachment(const std::string &_name, GLenum _attachment,
                              GLTextureFormat _format, GLTextureInternalFormat _iformat, GLTextureDataType _type,
                              GLTextureMinFilter _min, GLTextureMagFilter _mag,
-                             GLTextureWrap _swap, GLTextureWrap _twrap);
+                             GLTextureWrap _swap, GLTextureWrap _twrap,
+                             bool _immutable=false);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     void bind(Target _target=Target::FRAMEBUFFER);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     void unbind();
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     GLuint getTextureID(const std::string &_name);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     bool bindToSampler(const std::string &_name,GLuint _location);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     void print() const;
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     bool isComplete(Target _target=Target::FRAMEBUFFER);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     GLuint getID();
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     GLuint getDepthTextureID(){return  m_depthBufferID;}
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     void setViewport() const;
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
 
   private :
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     GLuint m_id;
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     FrameBufferObject(int _w, int _h, size_t _numAttatchments);
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     struct TextureAttachment
     {
         GLuint id=0;
@@ -53,11 +109,23 @@ class FrameBufferObject
         GLuint samplerLocation;
     };
 
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     int m_width; /// width of buffer (and usually textures)
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     int m_height; /// height of buffer (and usually textures)
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     std::vector<TextureAttachment>m_attachments;
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     GLuint m_depthBufferID;
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     bool m_bound=false;
+    //----------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------
     size_t m_attachmentSize=8;
 };
 

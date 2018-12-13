@@ -29,7 +29,7 @@ void NGLScene::resizeGL( int _w, int _h )
   m_win.height = static_cast<int>( _h * devicePixelRatio() );
 }
 
-auto ScreenQuad="ScreenQuad";
+//auto ScreenQuad="ScreenQuad";
 auto DOFShader="DOFShader";
 
 void NGLScene::loadDOFUniforms()
@@ -91,10 +91,6 @@ void NGLScene::initializeGL()
   shader->setUniform("material.shininess",51.2f);
   shader->setUniform("viewerPos",from);
 
-  // now load our texture shader
-//  shader->loadShader("TextureShader","shaders/TextureVertex.glsl","shaders/TextureFragment.glsl");
-
-  shader->loadShader(ScreenQuad,"shaders/ScreenQuadVertex.glsl","shaders/ScreenQuadFragment.glsl");
   shader->loadShader(DOFShader,"shaders/DOFVertex.glsl","shaders/DOFFragment.glsl");
   loadDOFUniforms();
   m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
@@ -102,9 +98,9 @@ void NGLScene::initializeGL()
   m_renderFBO->addColourAttachment("renderTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
                                    GLTextureDataType::UNSIGNED_BYTE,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
-                                   GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE);
+                                   GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
 
-  m_renderFBO->addDepthBuffer(GLTextureDepthFormats::DEPTH_COMPONENT16,GLTextureDataType::FLOAT,
+  m_renderFBO->addDepthBuffer(GLTextureDepthFormats::DEPTH_COMPONENT16,
                               GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                               GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,
                               true
@@ -120,7 +116,7 @@ void NGLScene::initializeGL()
   m_blurFBO->addColourAttachment("blurTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
                                    GLTextureDataType::UNSIGNED_BYTE,
                                    GLTextureMinFilter::LINEAR,GLTextureMagFilter::LINEAR,
-                                   GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE);
+                                   GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
 
   ngl::msg->addMessage(fmt::format("blurTarget {0}",m_blurFBO->getTextureID("blurTarget")));
   m_renderFBO->print();
@@ -204,28 +200,16 @@ void NGLScene::paintGL()
   // we are now going to draw to our FBO
   // set the rendering destination to FBO
   //----------------------------------------------------------------------------------------------------------------------
-//  glActiveTexture(GL_TEXTURE0);
-//  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("renderTarget"));
-
-//  glActiveTexture(GL_TEXTURE1);
-//  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getDepthTextureID());
-
-//  glActiveTexture(GL_TEXTURE2);
-//  glBindTexture(GL_TEXTURE_2D, m_blurFBO->getTextureID("blurTarget"));
-
-  ngl::msg->addMessage(fmt::format("renderTarget {0} depth {1} blur {2}",m_renderFBO->getTextureID("renderTarget"),
-                                   m_renderFBO->getDepthTextureID(),
-                                   m_blurFBO->getTextureID("blurTarget")));
   m_renderFBO->bind();
-  m_renderFBO->setViewport();
-  glClearColor(0,0,0,1);
+  // set this to be the actual screen size
+  glViewport(0, 0, m_win.width, m_win.height);
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // if we want a different camera we wouldset this here
   // rotate the teapot
   m_transform.reset();
   static float s_rot=0.1f;
-//  m_transform.setScale(0.8f,0.8f,0.8f);
   for (float z=-10.0f; z<10.0f; z+=1.8f)
   {
     for(float x=-10.0f; x<10.0f; x+=1.8f)
@@ -242,60 +226,48 @@ void NGLScene::paintGL()
   m_transform.setScale(0.1f,0.1f,0.1f);
   loadMatricesToShader(m_mouseGlobalTX);
   prim->draw("cube");
- // ngl::Image::saveFrameBufferToFile("pass1.png",0,0,m_win.width,m_win.height);
   m_renderFBO->unbind();
 
 
  //----------------------------------------------------------------------------------------------------------------------
   /// BLUR PASSES
  //----------------------------------------------------------------------------------------------------------------------
+ // m_blurFBO->setViewport();
+
   m_blurFBO->bind();
   m_screenQuad->bind();
- // m_blurFBO->setViewport();
-  //glClear(GL_DEPTH_BUFFER_BIT);
 
   shader->use(DOFShader);
+
   loadDOFUniforms();
-//  // HORIZONTAL BLUR
+  m_blurFBO->setViewport();
+  // HORIZONTAL BLUR
   shader->setUniform("colourSampler",0);
   shader->setUniform("depthSampler",1);
   shader->setUniform("uTexelOffset",1.0f,0.0f);
   m_screenQuad->draw();
-  //ngl::Image::saveFrameBufferToFile("pass2.png",0,0,m_win.width,m_win.height);
-  shader->setUniform("uTexelOffset",0.0f,1.0f);
-  shader->setUniform("colourSampler",2);
-  m_screenQuad->draw();
-
-  //----------------------------------------------------------------------------------------------------------------------
-  // VERTICAL BLUR
-  //----------------------------------------------------------------------------------------------------------------------
   m_blurFBO->unbind();
-  shader->use(ScreenQuad);
+  // Vertical Blur to default FB
   glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
   glClear(GL_DEPTH_BUFFER_BIT);
+  shader->setUniform("uTexelOffset",0.0f,1.0f);
+  shader->setUniform("colourSampler",2);
   glViewport(0, 0, m_win.width, m_win.height);
-//  shader->setUniform("hTexelOffset",0.0f,1.0f);
-  shader->setUniform("colour",2);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
-  //ngl::Image::saveFrameBufferToFile("pass3.png",0,0,m_win.width,m_win.height);
-
   m_screenQuad->unbind();
-
 
   //----------------------------------------------------------------------------------------------------------------------
  }
 
 void NGLScene::createScreenQuad()
 {
-  m_screenQuad=ngl::VAOFactory::createVAO(ngl::multiBufferVAO,GL_TRIANGLES);
+  m_screenQuad=ngl::VAOFactory::createVAO(ngl::simpleVAO,GL_TRIANGLES);
   m_screenQuad->bind();
 
   std::array<GLfloat,12> quad ={{-1.0f,1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,1.0f,1.0f,-1.0f,1.0f, 1.0f}};
-  std::array<GLfloat,12> uv=   {{ 0.0f,1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,1.0f,1.0f, 0.0f,1.0f, 1.0f}};
   m_screenQuad->setData(ngl::AbstractVAO::VertexData(quad.size()*sizeof(GLfloat),quad[0]));
   m_screenQuad->setVertexAttributePointer(0,2,GL_FLOAT,0,0);
-  m_screenQuad->setData(ngl::AbstractVAO::VertexData(quad.size()*sizeof(GLfloat),uv[0]));
-  m_screenQuad->setVertexAttributePointer(1,2,GL_FLOAT,0,0);
   m_screenQuad->setNumIndices(quad.size());
   m_screenQuad->unbind();
 
