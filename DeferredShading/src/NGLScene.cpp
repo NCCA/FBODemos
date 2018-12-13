@@ -12,6 +12,7 @@
 NGLScene::NGLScene()
 {
   setTitle("Deferred Render");
+  m_lights.resize(m_numLights);
 }
 
 NGLScene::~NGLScene()
@@ -33,7 +34,7 @@ void NGLScene::resizeGL( int _w, int _h )
 auto GeometryPassShader="GeometryPassShader";
 auto GeometryPassCheckerShader="GeometryPassCheckerShader";
 auto LightingPassShader="LightingPassShader";
-
+auto LightingPassFragment="LightingPassFragment";
 void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
@@ -72,8 +73,27 @@ void NGLScene::initializeGL()
   shader->setUniform("colour2",0.6f,0.6f,0.6f,1.0f);
   shader->setUniform("checkSize",60.0f);
 
-  shader->loadShader(LightingPassShader,"shaders/LightingPassVertex.glsl","shaders/LightingPassFragment.glsl");
-  shader->use(LightingPassShader);
+  // need to load this one manually as it will be dynamically editied
+  shader->createShaderProgram(LightingPassShader);
+
+  shader->attachShader("LightingPassVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader(LightingPassFragment,ngl::ShaderType::FRAGMENT);
+  shader->loadShaderSource("LightingPassVertex","shaders/LightingPassVertex.glsl");
+  shader->loadShaderSource(LightingPassFragment,"shaders/LightingPassFragment.glsl");
+  // the shader has a tag called @numLights, edit this and set to 8
+  shader->editShader(LightingPassFragment,"@numLights","64");
+  shader->compileShader("LightingPassVertex");
+  shader->compileShader(LightingPassFragment);
+  shader->attachShaderToProgram(LightingPassShader,"LightingPassVertex");
+  shader->attachShaderToProgram(LightingPassShader,LightingPassFragment);
+
+ shader->linkProgramObject(LightingPassShader);
+  (*shader)[LightingPassShader]->use();
+
+
+
+//  shader->loadShader(LightingPassShader,"shaders/LightingPassVertex.glsl","shaders/LightingPassFragment.glsl");
+//  shader->use(LightingPassShader);
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
   shader->setUniform("albedoSpecSampler",2);
@@ -261,25 +281,27 @@ void NGLScene::paintGL()
     m_screenQuad->bind();
     m_screenQuad->draw();
     m_screenQuad->unbind();
-    /// now to do a foward render pass of light Geo
-    // first we copy the depth buffer from our render buffer to the defaultFBO
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO->getID());
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject()); // write to default framebuffer
-    glBlitFramebuffer(0, 0, m_win.width, m_win.width, 0, 0, m_win.width, m_win.width, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-    glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-    glViewport(0,0,m_win.width,m_win.height);
-    shader->use(ngl::nglColourShader);
-    for(auto l : m_lights)
+    if(m_showLights==true)
     {
-      m_transform.setPosition(l.position);
-      shader->setUniform("Colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
-      ngl::Mat4 MVP =m_project* m_view* m_mouseGlobalTX*m_transform.getMatrix();
-      shader->setUniform("MVP",MVP);
-      prim->draw("sphere");
-    }
+      /// now to do a foward render pass of light Geo
+      // first we copy the depth buffer from our render buffer to the defaultFBO
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO->getID());
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject()); // write to default framebuffer
+      glBlitFramebuffer(0, 0, m_win.width, m_win.width, 0, 0, m_win.width, m_win.width, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+      glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+      glViewport(0,0,m_win.width,m_win.height);
+      shader->use(ngl::nglColourShader);
+      for(auto l : m_lights)
+      {
+        m_transform.setPosition(l.position);
+        shader->setUniform("Colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
+        ngl::Mat4 MVP =m_project* m_view* m_mouseGlobalTX*m_transform.getMatrix();
+        shader->setUniform("MVP",MVP);
+        prim->draw("sphere");
+      }
 
+    } // end show lights / forward pass
   }
-
 
 }
 
@@ -294,6 +316,22 @@ void NGLScene::createScreenQuad()
   m_screenQuad->setNumIndices(quad.size());
   m_screenQuad->unbind();
 
+}
+
+void NGLScene::editLightShader()
+{
+  auto *shader=ngl::ShaderLib::instance();
+  auto editString=fmt::format("{0}",m_numLights);
+  shader->editShader(LightingPassFragment,"@numLights",editString);
+  shader->compileShader(LightingPassFragment);
+  shader->linkProgramObject(LightingPassShader);
+  shader->use(LightingPassShader);
+  m_lights.resize(m_numLights);
+  shader->setUniform("positionSampler",0);
+  shader->setUniform("normalSampler",1);
+  shader->setUniform("albedoSpecSampler",2);
+  createLights();
+  setTitle(QString("Deferred Renderer %0 Lights").arg(m_numLights));
 }
 
 void NGLScene::createLights()
@@ -311,7 +349,8 @@ void NGLScene::createLights()
     float z=sinf(i)*m_lightRadius;
     float y=m_lightYOffset+sinf(i*m_freq);
     l.position.set(x,y,z);//=rng->getRandomVec3()*5.0f;
-    l.colour=rng->getRandomColour3()+0.2f;
+    l.colour=rng->getRandomColour3();
+    l.colour.clamp(0.2f,1.0f);
     i+=circleStep;
   }
 }
@@ -334,6 +373,7 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_F : showFullScreen(); break;
   // show windowed
   case Qt::Key_N : showNormal(); break;
+  case Qt::Key_0 : m_showLights^=true; break;
   case Qt::Key_1 : m_debugAttachment=0; break;
   case Qt::Key_2 : m_debugAttachment=1; break;
   case Qt::Key_3 : m_debugAttachment=2; break;
@@ -345,7 +385,24 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_I : m_freq+=0.02f; break;
   case Qt::Key_O : m_freq-=0.02f; break;
   case Qt::Key_R : m_lightRandom^=true; break;
-
+  case Qt::Key_4 :
+    for(auto &l : m_lights)
+    {
+      l.colour.set(1.0f,1.0f,1.0f);
+    }
+  break;
+  case Qt::Key_5 :
+  {
+    auto rng=ngl::Random::instance();
+    for(auto &l : m_lights)
+    {
+      l.colour=rng->getRandomColour3();
+      l.colour.clamp(0.2f,1.0f);
+    }
+  break;
+  }
+  case Qt::Key_Equal : m_numLights++; editLightShader(); break;
+  case Qt::Key_Minus : m_numLights--; editLightShader(); break;
   default : break;
   }
   // finally update the GLWindow and re-draw

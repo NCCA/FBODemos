@@ -116,6 +116,7 @@ private:
     void timerEvent(QTimerEvent *) override;
 
     void createScreenQuad();
+    void editLightShader();
     std::unique_ptr<ngl::AbstractVAO> m_screenQuad;
 
     std::unique_ptr<FrameBufferObject> m_renderFBO;
@@ -133,12 +134,15 @@ private:
         float linear= 0.7f;
         float quadratic=1.8f;
     };
-    std::array<Light,32> m_lights;
+    size_t m_numLights=24;
+    bool m_showLights=true;
+    std::vector<Light> m_lights;
     float m_freq=1.0f;
     float m_lightRadius=6.0f;
     float m_lightYOffset=1.0f;
     bool m_lightRandom=false;
     int m_randomUpdateTimer;
+
 };
 
 
