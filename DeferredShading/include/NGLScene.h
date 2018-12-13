@@ -4,10 +4,15 @@
 #include <ngl/Text.h>
 #include <ngl/Mat4.h>
 #include <ngl/AbstractVAO.h>
+#include <QElapsedTimer>
+
 #include "FrameBufferObject.h"
+#include "FirstPersonCamera.h"
 #include <QOpenGLWindow>
+#include <QSet>
 #include <memory>
 #include "WindowParams.h"
+
 //----------------------------------------------------------------------------------------------------------------------
 /// @file NGLScene.h
 /// @brief this class inherits from the Qt OpenGLWindow and allows us to use NGL to draw OpenGL
@@ -59,8 +64,10 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief Our Camera
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Mat4 m_view;
-    ngl::Mat4 m_project;
+//    ngl::Mat4 m_view;
+//    ngl::Mat4 m_project;
+      FirstPersonCamera m_cam;
+
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief transformation stack for the gl transformations etc
     //----------------------------------------------------------------------------------------------------------------------
@@ -86,6 +93,7 @@ private:
     /// @param [in] _event the Qt event to query for size etc
     //----------------------------------------------------------------------------------------------------------------------
     void keyPressEvent(QKeyEvent *_event) override;
+    void keyReleaseEvent(QKeyEvent *_event) override;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief this method is called every time a mouse is moved
     /// @param _event the Qt Event structure
@@ -125,7 +133,6 @@ private:
     bool m_debugOn=false;
     int m_debugAttachment=0;
     void createLights();
-    ngl::Vec3 m_from;
 
     struct Light
     {
@@ -142,6 +149,20 @@ private:
     float m_lightYOffset=1.0f;
     bool m_lightRandom=false;
     int m_randomUpdateTimer;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief the keys being pressed
+    //----------------------------------------------------------------------------------------------------------------------
+    QSet<Qt::Key> m_keysPressed;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief timing for camera update
+    //----------------------------------------------------------------------------------------------------------------------
+    float m_deltaTime = 0.0f;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief frame time for camera update
+    //----------------------------------------------------------------------------------------------------------------------
+    float m_lastFrame = 0.0f;
+    QElapsedTimer m_timer;
+
 
 };
 

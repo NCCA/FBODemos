@@ -16,6 +16,8 @@ void NGLScene::mouseMoveEvent( QMouseEvent* _event )
     m_win.spinYFace += static_cast<int>( 0.5f * diffx );
     m_win.origX = _event->x();
     m_win.origY = _event->y();
+    m_cam.processMouseMovement(diffx,diffy);
+
     update();
   }
   // right mouse translate code
@@ -43,29 +45,29 @@ void NGLScene::mousePressEvent( QMouseEvent* _event )
     m_win.origY  = _event->y();
     m_win.rotate = true;
   }
-  // right mouse translate mode
-  else if ( _event->button() == Qt::RightButton )
-  {
-    m_win.origXPos  = _event->x();
-    m_win.origYPos  = _event->y();
-    m_win.translate = true;
-  }
+//  // right mouse translate mode
+//  else if ( _event->button() == Qt::RightButton )
+//  {
+//    m_win.origXPos  = _event->x();
+//    m_win.origYPos  = _event->y();
+//    m_win.translate = true;
+//  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void NGLScene::mouseReleaseEvent( QMouseEvent* _event )
 {
-  // that event is called when the mouse button is released
-  // we then set Rotate to false
-  if ( _event->button() == Qt::LeftButton )
-  {
-    m_win.rotate = false;
-  }
-  // right mouse translate mode
-  if ( _event->button() == Qt::RightButton )
-  {
-    m_win.translate = false;
-  }
+//  // that event is called when the mouse button is released
+//  // we then set Rotate to false
+//  if ( _event->button() == Qt::LeftButton )
+//  {
+//    m_win.rotate = false;
+//  }
+//  // right mouse translate mode
+//  if ( _event->button() == Qt::RightButton )
+//  {
+//    m_win.translate = false;
+//  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -75,11 +77,11 @@ void NGLScene::wheelEvent( QWheelEvent* _event )
   // check the diff of the wheel position (0 means no change)
   if ( _event->delta() > 0 )
   {
-    m_modelPos.m_z += ZOOM;
+    m_cam.processMouseScroll(1.0f);
   }
   else if ( _event->delta() < 0 )
   {
-    m_modelPos.m_z -= ZOOM;
+    m_cam.processMouseScroll(-1.0f);
   }
   update();
 }

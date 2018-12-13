@@ -18,10 +18,12 @@ CONFIG-=app_bundle
 SOURCES+= $$PWD/src/NGLScene.cpp    \
           $$PWD/src/NGLSceneMouseControls.cpp \
           $$PWD/src/FrameBufferObject.cpp \
+          $$PWD/src/FirstPersonCamera.cpp \
 					$$PWD/src/main.cpp
 # same for the .h files
 HEADERS+= $$PWD/include/NGLScene.h \
           $$PWD/include/FrameBufferObject.h \
+          $$PWD/include/FirstPersonCamera.h \
           $$PWD/include/TextureTypes.h \
           $$PWD/include/WindowParams.h
 # and add the include dir into the search path for Qt and make
