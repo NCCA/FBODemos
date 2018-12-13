@@ -31,6 +31,7 @@ void NGLScene::resizeGL( int _w, int _h )
 }
 
 auto GeometryPassShader="GeometryPassShader";
+auto GeometryPassCheckerShader="GeometryPassCheckerShader";
 auto LightingPassShader="LightingPassShader";
 
 void NGLScene::initializeGL()
@@ -65,6 +66,11 @@ void NGLScene::initializeGL()
   shader->use(GeometryPassShader);
   shader->setUniform("albedoSampler",0);
   shader->setUniform("specularSampler",1);
+  shader->loadShader(GeometryPassCheckerShader,"shaders/GeometryPassVertex.glsl","shaders/CheckGeoPassFragment.glsl");
+  shader->use(GeometryPassCheckerShader);
+  shader->setUniform("colour1",0.9f,0.9f,0.9f,1.0f);
+  shader->setUniform("colour2",0.6f,0.6f,0.6f,1.0f);
+  shader->setUniform("checkSize",60.0f);
 
   shader->loadShader(LightingPassShader,"shaders/LightingPassVertex.glsl","shaders/LightingPassFragment.glsl");
   shader->use(LightingPassShader);
@@ -112,7 +118,7 @@ void NGLScene::initializeGL()
   ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   prim->createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
   prim->createSphere("sphere",0.1f,80);
-  startTimer(1);
+  startTimer(10);
   GLint maxAttach = 0;
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
   std::cout << maxAttach<<"\n";
@@ -125,6 +131,7 @@ void NGLScene::initializeGL()
   t.loadImage("textures/metallic.png");
   m_specularTextureID=t.setTextureGL();
   createLights();
+  m_randomUpdateTimer=startTimer(400);
 
 }
 
@@ -154,7 +161,6 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // grab an instance of the shader manager
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["Phong"]->use();
   // set the background colour (using blue to show it up)
 
   // Rotation based on the mouse position for our global transform
@@ -206,14 +212,15 @@ void NGLScene::paintGL()
     }
   }
   s_rot+=1.0f;
-  //shader->use(ngl::nglCheckerShader);
+  shader->use(GeometryPassCheckerShader);
   m_transform.reset();
   m_transform.setPosition(0.0f,-0.45f,0.0f);
-  ngl::Mat4 MVP=m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
-  ngl::Mat3 normalMatrix=m_view*m_mouseGlobalTX;
-  normalMatrix.inverse().transpose();
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
+//  ngl::Mat4 MVP=m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
+//  ngl::Mat3 normalMatrix=m_view*m_mouseGlobalTX;
+//  normalMatrix.inverse().transpose();
+//  shader->setUniform("MVP",MVP);
+//  shader->setUniform("normalMatrix",normalMatrix);
+  loadMatricesToShader(m_mouseGlobalTX);
   prim->draw("floor");
   //----------------------------------------------------------------------------------------------------------------------
   // if in debug mode draw gbuffer values for 2nd pass
@@ -255,11 +262,9 @@ void NGLScene::paintGL()
     m_screenQuad->draw();
     m_screenQuad->unbind();
     /// now to do a foward render pass of light Geo
+    // first we copy the depth buffer from our render buffer to the defaultFBO
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO->getID());
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject()); // write to default framebuffer
-    // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
-    // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
-    // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
     glBlitFramebuffer(0, 0, m_win.width, m_win.width, 0, 0, m_win.width, m_win.width, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
     glViewport(0,0,m_win.width,m_win.height);
@@ -306,7 +311,7 @@ void NGLScene::createLights()
     float z=sinf(i)*m_lightRadius;
     float y=m_lightYOffset+sinf(i*m_freq);
     l.position.set(x,y,z);//=rng->getRandomVec3()*5.0f;
-    l.colour=rng->getRandomColour3();
+    l.colour=rng->getRandomColour3()+0.2f;
     i+=circleStep;
   }
 }
@@ -337,9 +342,9 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_Right : m_lightRadius+=0.2; break;
   case Qt::Key_Up : m_lightYOffset+=0.2; break;
   case Qt::Key_Down : m_lightYOffset-=0.2; break;
-  case Qt::Key_I : m_freq+=1.0f; break;
-  case Qt::Key_O : m_freq-=1.0f; break;
-
+  case Qt::Key_I : m_freq+=0.02f; break;
+  case Qt::Key_O : m_freq-=0.02f; break;
+  case Qt::Key_R : m_lightRandom^=true; break;
 
   default : break;
   }
@@ -348,17 +353,32 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
 }
 void NGLScene::timerEvent(QTimerEvent *_event)
 {
-  float circleStep=2.0f*static_cast<float>(M_PI)/m_lights.size();
-  float i=0.0f;
-  static float time=0.0f;
-  for(auto &l : m_lights)
+  if(!m_lightRandom)
   {
-    l.position.m_x=cosf(i)*m_lightRadius;
-    l.position.m_z=sinf(i)*m_lightRadius;
-    l.position.m_y=m_lightYOffset+abs(sinf(time*i*m_freq));
-    i+=circleStep;
+    float circleStep=2.0f*static_cast<float>(M_PI)/m_lights.size();
+    float i=0.0f;
+    static float time=0.0f;
+    for(auto &l : m_lights)
+    {
+      l.position.m_x=cosf(i)*m_lightRadius;
+      l.position.m_z=sinf(i)*m_lightRadius;
+      l.position.m_y=m_lightYOffset+abs(sinf(time*i*m_freq));
+      i+=circleStep;
+    }
+    time+=0.01f;
   }
-  time+=0.01f;
+  else
+  {
+    if(_event->timerId()==m_randomUpdateTimer)
+    {
+    auto rng=ngl::Random::instance();
+    for(auto &l : m_lights)
+    {
+      l.position=rng->getRandomPoint(10,5,10);
+
+    }
+    }
+  }
   update();
 }
 

@@ -39,7 +39,7 @@ void main()
         vec3 diffuse = max(dot(Normal, lightDir), 0.0) * Diffuse * lights[i].colour;
         // specular
         vec3 halfwayDir = normalize(lightDir + viewDir);
-        float spec = pow(max(dot(Normal, halfwayDir), 0.0), 16.0);
+        float spec = pow(max(dot(Normal, halfwayDir), 0.0), 36.0);
         vec3 specular = lights[i].colour * spec * Specular;
         // attenuation
         float distance = length(lights[i].position - FragPos);
@@ -49,7 +49,5 @@ void main()
         lighting += diffuse + specular;
     }
 
-    // gamma correct
-    lighting = pow(lighting, vec3(1.0/1.2));
     FragColor = vec4(lighting, 1.0);
 }

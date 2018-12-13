@@ -137,6 +137,8 @@ private:
     float m_freq=1.0f;
     float m_lightRadius=6.0f;
     float m_lightYOffset=1.0f;
+    bool m_lightRandom=false;
+    int m_randomUpdateTimer;
 };
 
 
