@@ -3,23 +3,23 @@
 #include <iostream>
 #include <algorithm>
 
-std::unique_ptr<FrameBufferObject> FrameBufferObject::create(int _w, int _h, size_t _numAttatchments)
+std::unique_ptr<FrameBufferObject> FrameBufferObject::create(int _w, int _h, size_t _numAttatchments) noexcept
 {
   // note can't use make_unique here as private ctor being invoked.
   return std::unique_ptr<FrameBufferObject>(new FrameBufferObject(_w,_h,_numAttatchments));
 }
 
-void FrameBufferObject::setViewport() const
+void FrameBufferObject::setViewport() const noexcept
 {
   glViewport(0, 0, m_width, m_height);
 
 }
-FrameBufferObject::FrameBufferObject(int _w, int _h, size_t _numAttatchments) : m_width(_w),m_height(_h)
+FrameBufferObject::FrameBufferObject(int _w, int _h, size_t _numAttatchments) noexcept : m_width(_w),m_height(_h)
 {
   glGenFramebuffers(1, &m_id);
   m_attachments.resize(_numAttatchments);
 }
-FrameBufferObject::~FrameBufferObject()
+FrameBufferObject::~FrameBufferObject() noexcept
 {
   glDeleteFramebuffers(1,&m_id);
   for(auto t : m_attachments)
@@ -30,7 +30,7 @@ FrameBufferObject::~FrameBufferObject()
 }
 
 bool FrameBufferObject::addDepthBuffer(GLTextureDepthFormats _format, GLTextureMinFilter _min,
-                          GLTextureMagFilter _mag, GLTextureWrap _swrap, GLTextureWrap _twrap, bool _immutable)
+                          GLTextureMagFilter _mag, GLTextureWrap _swrap, GLTextureWrap _twrap, bool _immutable) noexcept
 {
   if(m_bound!=true)
   {
@@ -47,15 +47,15 @@ bool FrameBufferObject::addDepthBuffer(GLTextureDepthFormats _format, GLTextureM
   if(_immutable == true)
     glTexStorage2D(GL_TEXTURE_2D, 1, toGLType(_format), m_width, m_height);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, toGLType(_format), m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, static_cast<int>(toGLType(_format)), m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthBufferID, 0);
   return true;
 }
-bool FrameBufferObject::addColourAttachment(const std::string &_name, GLenum _attachment,
+bool FrameBufferObject::addColourAttachment(const std::string &_name, GLAttatchment _attachment,
                               GLTextureFormat _format, GLTextureInternalFormat _iformat,
                               GLTextureDataType _type, GLTextureMinFilter _min, GLTextureMagFilter _mag,
-                              GLTextureWrap _swap, GLTextureWrap _twrap, bool _immutable)
+                              GLTextureWrap _swrap, GLTextureWrap _twrap, bool _immutable) noexcept
 {
   if(m_bound!=true)
   {
@@ -66,36 +66,38 @@ bool FrameBufferObject::addColourAttachment(const std::string &_name, GLenum _at
   GLuint id;
   glGenTextures(1, &id);
   glBindTexture(GL_TEXTURE_2D, id);
-//  // set params
+  // set params
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, toGLType(_mag));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, toGLType(_min));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, toGLType(_swap));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, toGLType(_swrap));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, toGLType(_twrap));
   if(_immutable ==true)
     glTexStorage2D(GL_TEXTURE_2D, 1, toGLType(_iformat), m_width, m_height);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, toGLType(_iformat),m_width, m_height, 0, toGLType(_format), toGLType(_type), nullptr);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+_attachment, GL_TEXTURE_2D, id, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0,static_cast<int>(toGLType(_iformat)),m_width, m_height, 0, toGLType(_format), toGLType(_type), nullptr);
+  glFramebufferTexture2D(GL_FRAMEBUFFER,toGLType(_attachment), GL_TEXTURE_2D, id, 0);
   ngl::msg->addMessage(fmt::format("Adding Texture {0} {1}",_name,id));
   TextureAttachment t;
   t.id=id;
   t.name=_name;
-  m_attachments[_attachment]=t;
+  // convert enum to size_t for vector index.
+  size_t index=toGLType(_attachment)-GL_COLOR_ATTACHMENT0;
+  m_attachments[index]=t;
   return true;
 
 
 }
-void FrameBufferObject::bind(Target _target)
+void FrameBufferObject::bind(Target _target) noexcept
 {
   glBindFramebuffer(toGLType(_target), m_id);
   m_bound=true;
 }
-void FrameBufferObject::unbind()
+void FrameBufferObject::unbind() noexcept
 {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   m_bound=false;
 }
-GLuint FrameBufferObject::getTextureID(const std::string &_name)
+GLuint FrameBufferObject::getTextureID(const std::string &_name) noexcept
 {
   GLuint id=0;
   auto it=std::find_if(std::begin(m_attachments),std::end(m_attachments),[_name](TextureAttachment _t)
@@ -109,11 +111,11 @@ GLuint FrameBufferObject::getTextureID(const std::string &_name)
   }
   return id;
 }
-bool FrameBufferObject::bindToSampler(const std::string &_name,GLuint _location)
+bool FrameBufferObject::bindToSampler(const std::string &_name,GLuint _location) noexcept
 {
 
 }
-void FrameBufferObject::print() const
+void FrameBufferObject::print() const noexcept
 {
   if(m_bound !=true)
   {
@@ -147,12 +149,12 @@ void FrameBufferObject::print() const
 
 }
 
-bool FrameBufferObject::isComplete(Target _target)
+bool FrameBufferObject::isComplete(Target _target) noexcept
 {
   auto result=glCheckFramebufferStatus(toGLType(_target));
   return result==GL_FRAMEBUFFER_COMPLETE ? true : false;
 }
-GLuint FrameBufferObject::getID()
+GLuint FrameBufferObject::getID() noexcept
 {
   return m_id;
 }

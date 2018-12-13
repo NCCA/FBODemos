@@ -61,6 +61,10 @@ RGBA=GL_RGBA,BGRA=GL_BGRA,DEPTH_COMPONENT=GL_DEPTH_COMPONENT,
 DEPTH_STENCIL=GL_DEPTH_STENCIL
 };
 
+// Min number is 8 so uses these as default, as they are guaranteed to be
+// contiguous can use _8+(value) if more are required.
+enum class GLAttatchment : GLenum { _0 = GL_COLOR_ATTACHMENT0, _1,_2,_3,_4,_5,_6,_7,_8};
+
 
 enum class GLTextureDataType : GLenum
 {

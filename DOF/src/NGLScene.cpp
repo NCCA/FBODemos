@@ -90,12 +90,20 @@ void NGLScene::initializeGL()
   shader->setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
   shader->setUniform("material.shininess",51.2f);
   shader->setUniform("viewerPos",from);
+  ngl::VAOPrimitives::instance()->createTrianglePlane("floor",20,20,1,1,ngl::Vec3::up());
+  shader->use(ngl::nglCheckerShader);
+  shader->setUniform("lightDiffuse",1.0f,1.0f,1.0f,1.0f);
+  shader->setUniform("checkOn",true);
+  shader->setUniform("lightPos",lightPos.toVec3());
+  shader->setUniform("colour1",0.9f,0.9f,0.9f,1.0f);
+  shader->setUniform("colour2",0.6f,0.6f,0.6f,1.0f);
+  shader->setUniform("checkSize",60.0f);
 
   shader->loadShader(DOFShader,"shaders/DOFVertex.glsl","shaders/DOFFragment.glsl");
   loadDOFUniforms();
   m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_renderFBO->bind();
-  m_renderFBO->addColourAttachment("renderTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
+  m_renderFBO->addColourAttachment("renderTarget",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
                                    GLTextureDataType::UNSIGNED_BYTE,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -113,7 +121,7 @@ void NGLScene::initializeGL()
 
   m_blurFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_blurFBO->bind();
-  m_blurFBO->addColourAttachment("blurTarget",0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
+  m_blurFBO->addColourAttachment("blurTarget",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA8,
                                    GLTextureDataType::UNSIGNED_BYTE,
                                    GLTextureMinFilter::LINEAR,GLTextureMagFilter::LINEAR,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -221,11 +229,16 @@ void NGLScene::paintGL()
     }
   }
   s_rot+=1.0f;
+  shader->use(ngl::nglCheckerShader);
   m_transform.reset();
-  m_transform.setPosition(0,1.0f,m_focusDistance);
-  m_transform.setScale(0.1f,0.1f,0.1f);
-  loadMatricesToShader(m_mouseGlobalTX);
-  prim->draw("cube");
+  m_transform.setPosition(0.0f,-0.45f,0.0f);
+  ngl::Mat4 MVP=m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
+  ngl::Mat3 normalMatrix=m_view*m_mouseGlobalTX;
+  normalMatrix.inverse().transpose();
+  shader->setUniform("MVP",MVP);
+  shader->setUniform("normalMatrix",normalMatrix);
+  prim->draw("floor");
+
   m_renderFBO->unbind();
 
 
