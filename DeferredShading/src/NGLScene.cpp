@@ -387,7 +387,7 @@ void NGLScene::forwardPass()
 void NGLScene::bloomBlurPass()
 {
   auto *shader=ngl::ShaderLib::instance();
-  size_t amount = 20;
+  size_t amount = 10;
   shader->use(BloomPassShader);
 
   m_screenQuad->bind();
@@ -444,6 +444,8 @@ void NGLScene::finalPass()
 
 void NGLScene::paintGL()
 {
+  std::chrono::steady_clock::time_point startPaint = std::chrono::steady_clock::now();
+
   float currentFrame = m_timer.elapsed()*0.001f;
   m_deltaTime = currentFrame - m_lastFrame;
   m_lastFrame = currentFrame;
@@ -503,29 +505,33 @@ void NGLScene::paintGL()
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       lightingPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Lighting Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      ngl::msg->addMessage(fmt::format("Lighting Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       forwardPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Forward Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      ngl::msg->addMessage(fmt::format("Forward Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       bloomBlurPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Bloom blur Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      ngl::msg->addMessage(fmt::format("Bloom blur Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       finalPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Final Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
 }
+  std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
+  ngl::msg->drawLine();
+  ngl::msg->addMessage(fmt::format("Total Rendertime {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count()));
+  ngl::msg->drawLine();
 
 }
 
