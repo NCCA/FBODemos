@@ -128,18 +128,23 @@ private:
     void geometryPass();
     void lightingPass();
     void forwardPass();
+    void ssaoPass();
     void bloomBlurPass();
     void finalPass();
+
+    void createSSAOKernel();
     void debugBlit(GLuint id);
     std::unique_ptr<ngl::AbstractVAO> m_screenQuad;
 
     std::unique_ptr<FrameBufferObject> m_renderFBO;
     std::unique_ptr<FrameBufferObject> m_lightingFBO;
     std::unique_ptr<FrameBufferObject> m_forwardPass;
+    std::unique_ptr<FrameBufferObject> m_ssaoPass;
     std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
 //    GLuint m_albedoTextureID=0;
 //    GLuint m_specularTextureID=0;
-    std::array<GLuint,5> m_pbrTextures;
+    std::array<GLuint,6> m_pbrTextures;
+    GLuint m_noiseTexture=0;
     bool m_debugOn=false;
     int m_debugAttachment=0;
     void createLights();
@@ -151,13 +156,16 @@ private:
         float linear= 0.7f;
         float quadratic=1.8f;
     };
-    size_t m_numLights=24;
+    size_t m_numLights=64;
     bool m_showLights=true;
     std::vector<Light> m_lights;
+    std::vector<ngl::Vec3> m_ssaoKernel;
+
     float m_freq=1.0f;
     float m_lightRadius=4.0f;
     float m_lightYOffset=1.0f;
     bool m_lightRandom=false;
+    bool m_useAO=true;
     int m_randomUpdateTimer;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the keys being pressed

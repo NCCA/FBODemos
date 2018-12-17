@@ -1,15 +1,17 @@
 #version 330 core
-layout (location = 0) out vec3 position;
+layout (location=0) out vec3 position;
 // We use the W channel for roughness
-layout (location = 1) out vec4 normal;
+layout (location=1) out vec4 normal;
 // albedoMetallic RGB == albedo A=metallic
-layout (location = 2) out vec4 albedoMetallic;
+layout (location=2) out vec4 albedoMetallic;
+layout (location=4) out vec3 positionVS;
 
 in VertexData
 {
   vec3 fragPos;
   vec2 uv;
   vec3 normal;
+  vec3 fragVS;
 }vertexIn;
 
 uniform sampler2D albedoSampler;
@@ -42,7 +44,7 @@ void main()
 
   // store the fragment position vector in the first gbuffer texture
   position = vertexIn.fragPos;
-
+  positionVS=vertexIn.fragVS;
   normal.rgb = getNormalFromMap(vertexIn.fragPos,vertexIn.normal,vertexIn.uv);
   normal.a=texture(roughnessSampler,  vertexIn.uv).r;
   albedoMetallic.rgb = texture(albedoSampler, vertexIn.uv).rgb;

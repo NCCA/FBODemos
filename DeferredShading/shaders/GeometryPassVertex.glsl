@@ -16,12 +16,16 @@ out VertexData
   vec3 fragPos;
   vec2 uv;
   vec3 normal;
+  vec3 fragVS;
+
 }vertexOut;
 
 void main()
 {
 
   vertexOut.fragPos = vec3(M * vec4(inVert, 1.0));
+  vertexOut.fragVS=vec3(MV*vec4(inVert,1.0));
+
   vertexOut.uv=inUV;
   vertexOut.normal=normalMatrix*inNormal;
   gl_Position = MVP*vec4(inVert,1.0);

@@ -7,7 +7,8 @@ uniform sampler2D positionSampler;
 uniform sampler2D normalSampler;
 uniform sampler2D albedoMetallicSampler;
 uniform sampler2D aoSampler;
-
+uniform sampler2D ssaoSampler;
+uniform bool useAO;
 struct Light
 {
     vec3 position;
@@ -77,6 +78,7 @@ void main()
   float metallic  = texture(albedoMetallicSampler,uv).a;
   float roughness = texture(normalSampler, uv).a;
   float ao        = texture(aoSampler, uv).r;
+  float AmbientOcclusion = texture(ssaoSampler, uv).r;
 
   vec3 WorldPos = texture(positionSampler, uv).rgb;
 //  vec3 Normal =texture(normalSampler, uv).rgb;
@@ -131,15 +133,16 @@ void main()
 
   }
 
-  vec3 ambient = vec3(0.03) * albedo * ao;
+  vec3 ambient = vec3(0.03) * albedo *AmbientOcclusion;
 
 
+  if(useAO==true)
+    fragColour = vec4( ambient+Lo, 1.0);
+  else
+    fragColour = vec4( Lo, 1.0);
 
 
-
-  fragColour = vec4( Lo, 1.0);
-
-
+  //fragColour=vec4(AmbientOcclusion);
   float bright = dot(fragColour.rgb, vec3(0.2126, 0.7152, 0.0722));
   if(bright > 1.0)
       brightness = vec4(fragColour.rgb, 1.0);
