@@ -430,6 +430,7 @@ void NGLScene::finalPass()
   glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[0]->getTextureID("fragColour"));
   shader->setUniform("bloom", 1);
   shader->setUniform("exposure", 1.0f);
+  shader->setUniform("gamma",1.1f);
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
@@ -449,8 +450,6 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // draw to our FBO first
   //----------------------------------------------------------------------------------------------------------------------
-  // grab an instance of the shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   /// first we reset the movement values
   float xDirection=0.0;
   float yDirection=0.0;
@@ -476,8 +475,6 @@ void NGLScene::paintGL()
   }
 
 
-   // get the VBO instance and draw the built in teapot
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   //----------------------------------------------------------------------------------------------------------------------
   // Pass 1
   //----------------------------------------------------------------------------------------------------------------------
@@ -528,45 +525,6 @@ void NGLScene::paintGL()
       ngl::msg->addMessage(fmt::format("Final Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
-  //  debugBlit(m_pingPongBuffer[1]->getTextureID("fragColour"));
-
-
-//    glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    shader->use(BloomPassFinalShader);
-//    glActiveTexture(GL_TEXTURE0);
-//    glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[0]->getTextureID("fragColour") );
-//    glActiveTexture(GL_TEXTURE1);
-//    glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[1]->getTextureID("fragColour"));
-//    shader->setUniform("bloom", 1);
-//    shader->setUniform("exposure", 1.0f);
-//    m_screenQuad->draw();
-
-
-
-  //  m_screenQuad->unbind();
-/*
-    if(m_showLights==true)
-    {
-      /// now to do a foward render pass of light Geo
-      // first we copy the depth buffer from our render buffer to the defaultFBO
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO->getID());
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject()); // write to default framebuffer
-      glBlitFramebuffer(0, 0, m_win.width, m_win.width, 0, 0, m_win.width, m_win.width, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-      glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-      glViewport(0,0,m_win.width,m_win.height);
-      shader->use(ngl::nglColourShader);
-      for(auto l : m_lights)
-      {
-        m_transform.setPosition(l.position);
-        shader->setUniform("Colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
-        ngl::Mat4 MVP =m_cam.getVP()* m_mouseGlobalTX*m_transform.getMatrix();
-        shader->setUniform("MVP",MVP);
-        prim->draw("sphere");
-      }
-
-    } // end show lights / forward pass
-*/
 }
 
 }
@@ -618,7 +576,7 @@ void NGLScene::createLights()
     float y=m_lightYOffset+sinf(i*m_freq);
     l.position.set(x,y,z);//=rng->getRandomVec3()*5.0f;
     l.colour=rng->getRandomColour3()*4.0;
-    l.colour.clamp(0.2f,4.0f);
+    l.colour.clamp(1.0f,4.0f);
     i+=circleStep;
   }
 }
@@ -667,8 +625,8 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
     auto rng=ngl::Random::instance();
     for(auto &l : m_lights)
     {
-      l.colour=rng->getRandomColour3()*3.0f;
-      l.colour.clamp(0.2f,3.0f);
+      l.colour=rng->getRandomColour3()*4.0f;
+      l.colour.clamp(1.0f,4.0f);
     }
   break;
   }

@@ -7,12 +7,12 @@ uniform sampler2D scene;
 uniform sampler2D bloomBlur;
 uniform bool bloom;
 uniform float exposure;
+uniform float gamma=2.2;
 
 void main()
 {
   vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
 
-    const float gamma = 1.2;
     vec3 hdrColor = texture(scene, uv).rgb;
     vec3 bloomColor = texture(bloomBlur, uv).rgb;
     if(bloom)

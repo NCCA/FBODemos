@@ -49,13 +49,13 @@ void main()
         lighting += diffuse + specular;
     }
 
-    const float gamma = 1.8;
-    const float exposure=1.0;
-    vec3 mapped = vec3(1.0) - exp(-lighting * exposure);
-   // Gamma correction
-     mapped = pow(mapped, vec3(1.0 / gamma));
+//    const float gamma = 1.8;
+//    const float exposure=1.0;
+//    vec3 mapped = vec3(1.0) - exp(-lighting * exposure);
+//   // Gamma correction
+//     mapped = pow(mapped, vec3(1.0 / gamma));
 
-    fragColour = vec4(mapped, 1.0);
+    fragColour = vec4(lighting, 1.0);
 
 
     float bright = dot(fragColour.rgb, vec3(0.2126, 0.7152, 0.0722));
