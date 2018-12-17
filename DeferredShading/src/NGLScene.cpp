@@ -74,7 +74,10 @@ void NGLScene::initializeGL()
   shader->loadShader(GeometryPassShader,"shaders/GeometryPassVertex.glsl","shaders/GeometryPassFragment.glsl");
   shader->use(GeometryPassShader);
   shader->setUniform("albedoSampler",0);
-  shader->setUniform("specularSampler",1);
+  shader->setUniform("metallicSampler",1);
+  shader->setUniform("roughnessSampler",2);
+  shader->setUniform("normalMapSampler",3);
+
   shader->loadShader(GeometryPassCheckerShader,"shaders/GeometryPassVertex.glsl","shaders/CheckGeoPassFragment.glsl");
   shader->use(GeometryPassCheckerShader);
   shader->setUniform("colour1",0.9f,0.9f,0.9f,1.0f);
@@ -115,7 +118,8 @@ void NGLScene::initializeGL()
   (*shader)[LightingPassShader]->use();
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
-  shader->setUniform("albedoSpecSampler",2);
+  shader->setUniform("albedoMetallicSampler",2);
+  shader->setUniform("aoSampler",3);
 
   ngl::VAOPrimitives::instance()->createTrianglePlane("floor",20,20,1,1,ngl::Vec3::up());
   ngl::VAOPrimitives::instance()->createSphere("sphere",0.5f,20);
@@ -132,7 +136,7 @@ void NGLScene::initializeGL()
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
 
-  m_renderFBO->addColourAttachment("albedoSpec",GLAttatchment::_2,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
+  m_renderFBO->addColourAttachment("albedoMetallic",GLAttatchment::_2,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -248,9 +252,18 @@ void NGLScene::initializeGL()
   // load textures for render pass (only using 1 for all teapots)
   ngl::Texture t;
   t.loadImage("textures/albedo.png");
-  m_albedoTextureID=t.setTextureGL();
+  //m_albedoTextureID=t.setTextureGL();
+  m_pbrTextures[0]=t.setTextureGL();
+  t.loadImage("textures/normal.png");
+  m_pbrTextures[1]=t.setTextureGL();
   t.loadImage("textures/metallic.png");
-  m_specularTextureID=t.setTextureGL();
+  m_pbrTextures[2]=t.setTextureGL();
+  t.loadImage("textures/roughness.png");
+  m_pbrTextures[3]=t.setTextureGL();
+  t.loadImage("textures/ao.png");
+  m_pbrTextures[4]=t.setTextureGL();
+
+  //m_specularTextureID=t.setTextureGL();
   createLights();
   m_randomUpdateTimer=startTimer(400);
 
@@ -285,10 +298,30 @@ void NGLScene::geometryPass()
   glDrawBuffers(3, attachments);
 
   // bind textures for teapots
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D,m_albedoTextureID);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D,m_specularTextureID);
+  // albedo channel 0
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[0]);
+    // metallic 1
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[2]);
+    // roughness 2
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[3]);
+    // normal map
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[1]);
+
+
+  //  for(size_t t=0; t<m_pbrTextures.size(); ++t)
+//  {
+//    glActiveTexture(GL_TEXTURE0+t);
+//    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[t]);
+
+//  }
+//  glActiveTexture(GL_TEXTURE0);
+//  glBindTexture(GL_TEXTURE_2D,m_albedoTextureID);
+//  glActiveTexture(GL_TEXTURE1);
+//  glBindTexture(GL_TEXTURE_2D,m_specularTextureID);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   shader->use(GeometryPassShader);
   // if we want a different camera we wouldset this here
@@ -328,7 +361,10 @@ void NGLScene::lightingPass()
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
   glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoSpec"));
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D, m_pbrTextures[4]);
+
   int i=0;
   for(auto l : m_lights)
   {
@@ -429,8 +465,8 @@ void NGLScene::finalPass()
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[0]->getTextureID("fragColour"));
   shader->setUniform("bloom", 1);
-  shader->setUniform("exposure", 1.0f);
-  shader->setUniform("gamma",1.1f);
+  shader->setUniform("exposure", 2.0f);
+  shader->setUniform("gamma",2.1f);
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
@@ -561,7 +597,7 @@ void NGLScene::editLightShader()
   m_lights.resize(m_numLights);
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
-  shader->setUniform("albedoSpecSampler",2);
+  shader->setUniform("albedoMetallicSampler",2);
   createLights();
   setTitle(QString("Deferred Renderer %0 Lights").arg(m_numLights));
 }
@@ -623,7 +659,7 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_4 :
     for(auto &l : m_lights)
     {
-      l.colour.set(2.0f,2.0f,2.0f);
+      l.colour.set(4.0f,4.0f,4.0f);
     }
   break;
   case Qt::Key_5 :

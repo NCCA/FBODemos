@@ -137,8 +137,9 @@ private:
     std::unique_ptr<FrameBufferObject> m_lightingFBO;
     std::unique_ptr<FrameBufferObject> m_forwardPass;
     std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
-    GLuint m_albedoTextureID=0;
-    GLuint m_specularTextureID=0;
+//    GLuint m_albedoTextureID=0;
+//    GLuint m_specularTextureID=0;
+    std::array<GLuint,5> m_pbrTextures;
     bool m_debugOn=false;
     int m_debugAttachment=0;
     void createLights();
@@ -154,7 +155,7 @@ private:
     bool m_showLights=true;
     std::vector<Light> m_lights;
     float m_freq=1.0f;
-    float m_lightRadius=6.0f;
+    float m_lightRadius=4.0f;
     float m_lightYOffset=1.0f;
     bool m_lightRandom=false;
     int m_randomUpdateTimer;
