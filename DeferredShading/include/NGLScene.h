@@ -125,9 +125,18 @@ private:
 
     void createScreenQuad();
     void editLightShader();
+    void geometryPass();
+    void lightingPass();
+    void forwardPass();
+    void bloomBlurPass();
+    void finalPass();
+    void debugBlit(GLuint id);
     std::unique_ptr<ngl::AbstractVAO> m_screenQuad;
 
     std::unique_ptr<FrameBufferObject> m_renderFBO;
+    std::unique_ptr<FrameBufferObject> m_lightingFBO;
+    std::unique_ptr<FrameBufferObject> m_forwardPass;
+    std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
     GLuint m_albedoTextureID=0;
     GLuint m_specularTextureID=0;
     bool m_debugOn=false;

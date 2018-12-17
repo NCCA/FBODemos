@@ -90,6 +90,8 @@ class FrameBufferObject
     /// @returns The texture ID of texture if found else 0 (default GL texture object)
     //----------------------------------------------------------------------------------------------------------------------
     GLuint getTextureID(const std::string &_name) noexcept;
+
+    static void copyFrameBufferTexture(GLuint _srcID, GLuint _dstID, GLuint _width, GLuint _height, GLenum _mode=GL_COLOR_BUFFER_BIT) noexcept;
     //----------------------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------------------
     bool bindToSampler(const std::string &_name,GLuint _location) noexcept;
@@ -121,7 +123,7 @@ class FrameBufferObject
     float width()  const  noexcept {return m_width;}
     float height() const noexcept {return m_height;}
     //----------------------------------------------------------------------------------------------------------------------
-
+    static void setDefaultFBO(GLuint _id){s_defaultFBO=_id;}
   private :
     //----------------------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------------------
@@ -156,6 +158,8 @@ class FrameBufferObject
     //----------------------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------------------
     size_t m_attachmentSize=8;
+    static GLuint s_copyFBO;
+    static GLuint s_defaultFBO;
 };
 
 #endif

@@ -25,6 +25,7 @@ HEADERS+= $$PWD/include/NGLScene.h \
           $$PWD/include/FrameBufferObject.h \
           $$PWD/include/FirstPersonCamera.h \
           $$PWD/include/TextureTypes.h \
+          $$PWD/include/ScopedBind.h \
           $$PWD/include/WindowParams.h
 # and add the include dir into the search path for Qt and make
 INCLUDEPATH +=./include

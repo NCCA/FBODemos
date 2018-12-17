@@ -1,6 +1,6 @@
 #version 330 core
-layout(location=0)out vec4 FragColor;
-
+layout(location=0)out vec4 fragColour;
+layout(location=1)out vec4 brightness;
 //in vec2 uv;
 
 uniform sampler2D positionSampler;
@@ -49,5 +49,20 @@ void main()
         lighting += diffuse + specular;
     }
 
-    FragColor = vec4(lighting, 1.0);
+    const float gamma = 1.8;
+    const float exposure=1.0;
+    vec3 mapped = vec3(1.0) - exp(-lighting * exposure);
+   // Gamma correction
+     mapped = pow(mapped, vec3(1.0 / gamma));
+
+    fragColour = vec4(mapped, 1.0);
+
+
+    float bright = dot(fragColour.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if(bright > 1.0)
+        brightness = vec4(fragColour.rgb, 1.0);
+    else
+        brightness = vec4(0.0, 0.0, 0.0, 1.0);
+
+
 }

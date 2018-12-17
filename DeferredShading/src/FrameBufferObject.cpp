@@ -3,6 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
+GLuint FrameBufferObject::s_copyFBO=0;
+GLuint FrameBufferObject::s_defaultFBO=0;
 std::unique_ptr<FrameBufferObject> FrameBufferObject::create(int _w, int _h, size_t _numAttatchments) noexcept
 {
   // note can't use make_unique here as private ctor being invoked.
@@ -148,6 +150,28 @@ void FrameBufferObject::print() const noexcept
   } while (isBuffer != GL_NONE);
 
 }
+
+
+void FrameBufferObject::copyFrameBufferTexture(GLuint _srcID, GLuint _dstID,GLuint _width, GLuint _height, GLenum _mode) noexcept
+{
+  //glCopyImageSubData(_srcID,GL_TEXTURE_BUFFER,1,0,0,0, _dstID,GL_TEXTURE_BUFFER,1,0,0,0, _width,height,0);
+  if(s_copyFBO ==0)
+    glGenFramebuffers(1, &s_copyFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER,s_copyFBO);
+  glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                         GL_TEXTURE_2D, _srcID, 0);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                         GL_TEXTURE_2D, _dstID, 0);
+  glDrawBuffer(GL_COLOR_ATTACHMENT1);
+  glBlitFramebuffer(0, 0, _width, _height, 0, 0, _width, _height,
+                    _mode, GL_NEAREST);
+
+  glBindFramebuffer(GL_FRAMEBUFFER,s_defaultFBO);
+
+
+}
+
+
 
 bool FrameBufferObject::isComplete(Target _target) noexcept
 {
