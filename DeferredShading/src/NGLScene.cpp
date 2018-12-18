@@ -11,6 +11,9 @@
 #include <ngl/Texture.h>
 #include "ScopedBind.h"
 #include "TexturePack.h"
+#include "imgui.h"
+#include "QtImGui.h"
+#include "ImGuizmo.h"
 
 NGLScene::NGLScene()
 {
@@ -53,7 +56,7 @@ void NGLScene::initializeGL()
   // gl commands from the lib, if this is not done program will crash
   ngl::NGLInit::instance();
 
-  glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);			   // Grey Background
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
   // enable multisampling for smoother drawing
@@ -83,7 +86,7 @@ void NGLScene::initializeGL()
   }
 
   ngl::VAOPrimitives::instance()->createTrianglePlane("floor",30,30,10,10,ngl::Vec3::up());
-  ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,4);
+  ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,20);
   ngl::msg->addMessage("Creating m_renderFBO");
   FrameBufferObject::setDefaultFBO(defaultFramebufferObject());
   m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
@@ -254,9 +257,6 @@ void NGLScene::initializeGL()
   createScreenQuad();
 
   // now create the primitives to draw
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-  prim->createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
-  prim->createSphere("sphere",0.1f,80);
   startTimer(10);
   GLint maxAttach = 0;
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
@@ -274,6 +274,7 @@ void NGLScene::initializeGL()
   createSSAOKernel();
   TexturePack tp;
   tp.loadJSON("textures/textures.json");
+  QtImGui::initialize(this);
 
 }
 
@@ -480,7 +481,7 @@ void NGLScene::forwardPass()
 
   //glClear(  GL_DEPTH_BUFFER_BIT);
   shader->use(ColourShader);
-  m_transform.setScale(0.8f,0.8f,0.8f);
+  m_transform.setScale(0.05f,0.05f,0.05f);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   for(auto l : m_lights)
   {
@@ -507,7 +508,6 @@ void NGLScene::bloomBlurPass()
 
   bool firstTime=true;
   bool horizontal=true;
-  ngl::msg->addMessage("Ping Pong");
   for (size_t i = 0; i < amount; i++)
   {
     m_pingPongBuffer[horizontal]->bind();
@@ -576,14 +576,16 @@ void NGLScene::finalPass()
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[0]->getTextureID("fragColour"));
   shader->setUniform("bloom", 1);
-  shader->setUniform("exposure", 2.0f);
-  shader->setUniform("gamma",2.1f);
+  shader->setUniform("exposure", 1.0f);
+  shader->setUniform("gamma",2.2f);
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
   m_dofTarget->unbind();
 
+  if(m_useDOF == true)
+  {
   // first DOF
   m_dofPass->bind();
   shader->use(DOFShader);
@@ -615,8 +617,12 @@ void NGLScene::finalPass()
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
   m_screenQuad->unbind();
-
-
+  }
+  else
+  {
+    debugBlit(m_dofTarget->getTextureID("fragColour"));
+  }
+  drawUI();
 // debugBlit(m_dofPass->getTextureID("blurTarget"));
 }
 
@@ -663,8 +669,8 @@ void NGLScene::paintGL()
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     geometryPass();
     std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-    ngl::msg->addMessage(fmt::format("Geometry Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
-
+   // ngl::msg->addMessage(fmt::format("Geometry Pass took {0} ms", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+    m_geoPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
   }
   //----------------------------------------------------------------------------------------------------------------------
   // if in debug mode draw gbuffer values for 2nd pass
@@ -684,14 +690,16 @@ void NGLScene::paintGL()
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       ssaoPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("SSAO Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      m_ssaoPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+      //ngl::msg->addMessage(fmt::format("SSAO Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       lightingPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Lighting Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      //ngl::msg->addMessage(fmt::format("Lighting Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      m_lightingPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
     }
 
 
@@ -699,20 +707,23 @@ void NGLScene::paintGL()
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       forwardPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Forward Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      m_forwardPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+      //ngl::msg->addMessage(fmt::format("Forward Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       bloomBlurPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Bloom blur Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      m_bloomBlurPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+      //ngl::msg->addMessage(fmt::format("Bloom blur Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       finalPass();
       std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-      ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
+      m_finalPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+      //ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
     if(m_textureDebug==true)
@@ -724,10 +735,10 @@ void NGLScene::paintGL()
 
 }
   std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
-  ngl::msg->drawLine();
-  ngl::msg->addMessage(fmt::format("Total Rendertime {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count()));
-  ngl::msg->drawLine();
-
+  //ngl::msg->drawLine();
+  //ngl::msg->addMessage(fmt::format("Total Rendertime {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count()));
+  //ngl::msg->drawLine();
+  m_totalDuration=std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count();
 }
 
 void NGLScene::createScreenQuad()
@@ -746,7 +757,7 @@ void NGLScene::createScreenQuad()
 void NGLScene::editLightShader()
 {
   auto *shader=ngl::ShaderLib::instance();
-  m_numLights=std::min(m_numLights, std::max(1ul, 64ul));
+  m_numLights=std::min(m_numLights, std::max(1, 64));
 
   auto editString=fmt::format("{0}",m_numLights);
   shader->editShader(LightingPassFragment,"@numLights",editString);
@@ -926,3 +937,67 @@ void NGLScene::timerEvent(QTimerEvent *_event)
   update();
 }
 
+
+void NGLScene::drawUI()
+{
+  QtImGui::newFrame();
+
+  ImGui::Begin("Statistics");
+  ImGui::Text("Geometry Pass %ld uS", m_geoPassDuration);
+  ImGui::Text("SSAO Pass %ld uS ", m_ssaoPassDuration);
+  ImGui::Text("Ligthing Pass %ld uS ", m_lightingPassDuration);
+  ImGui::Text("Forward Pass %ld uS ", m_forwardPassDuration);
+  ImGui::Text("Bloom Blur Pass %ld uS ", m_bloomBlurPassDuration);
+  ImGui::Text("Final  Pass %ld uS ", m_finalPassDuration);
+  ImGui::Text("Total Time %ld uS ", m_totalDuration);
+
+  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+
+  ImGui::End();
+
+  ImGui::Begin("Controls");
+  ImGui::Checkbox("Use DOF", &m_useDOF);
+
+  ImGui::SliderFloat("F-Stop", &m_fstop,0.8f,32.0f);
+  ImGui::SliderInt("AV", &m_av,0,12);
+  ImGui::SliderFloat("Focal Length", &m_focalLenght,0.1f,32.0f);
+  ImGui::SliderFloat("Focal Distance", &m_focalDistance,0.0f,10.0f);
+  ImGui::SliderFloat("Focus Distance", &m_focusDistance,0.0f,10.0f);
+  ImGui::Separator();
+  ImGui::Checkbox("Use AO", &m_useAO);
+  ImGui::End();
+
+  ImGui::Begin("Lights");
+  if (ImGui::SliderInt("Number of Lights", &m_numLights,1,64) )
+    editLightShader();
+  ImGui::Separator();
+
+  ImGui::SliderFloat("Light Radius", &m_lightRadius,0.0f,40.0f);
+  ImGui::SliderFloat("Light Y", &m_lightYOffset,0.0f,40.0f);
+  ImGui::Checkbox("Light Random", &m_lightRandom);
+  ImGui::Separator();
+  if(ImGui::Button("White"))
+  {
+    for(auto &l : m_lights)
+    {
+      l.colour.set(4.0f,4.0f,4.0f);
+    }
+  }
+  if(ImGui::Button("Rand"))
+  {
+    auto rng=ngl::Random::instance();
+    rng->setSeed();
+    for(auto &l : m_lights)
+    {
+      l.colour=rng->getRandomColour3()*4.0f;
+      l.colour.clamp(1.0f,4.0f);
+    }
+
+  }
+
+    ImGui::End();
+
+  ImGui::Render();
+
+}

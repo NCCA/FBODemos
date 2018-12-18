@@ -129,7 +129,7 @@ void main()
 
   }
 
-  vec3 ambient = vec3(0.3) * albedo *ambientOcclusion;
+  vec3 ambient = vec3(0.1) * albedo *ambientOcclusion;
 
 
   if(useAO==true)

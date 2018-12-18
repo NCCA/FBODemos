@@ -130,6 +130,7 @@ private:
     void ssaoPass();
     void bloomBlurPass();
     void finalPass();
+    void drawUI();
     void loadDOFUniforms();
     void createSSAOKernel();
     void debugBlit(GLuint id);
@@ -160,7 +161,7 @@ private:
         float linear= 0.7f;
         float quadratic=1.8f;
     };
-    size_t m_numLights=24;
+    int m_numLights=24;
     bool m_showLights=true;
     std::vector<Light> m_lights;
     std::vector<ngl::Vec3> m_ssaoKernel;
@@ -171,6 +172,17 @@ private:
     bool m_lightRandom=false;
     bool m_useAO=true;
     int m_randomUpdateTimer;
+
+    long m_geoPassDuration=0;
+    long m_ssaoPassDuration=0;
+    long m_lightingPassDuration=0;
+    long m_forwardPassDuration=0;
+    long m_bloomBlurPassDuration=0;
+    long m_finalPassDuration=0;
+    long m_totalDuration=0;
+
+    bool m_useDOF=true;
+
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the keys being pressed
     //----------------------------------------------------------------------------------------------------------------------

@@ -20,7 +20,8 @@ SOURCES+= $$PWD/src/NGLScene.cpp    \
           $$PWD/src/FrameBufferObject.cpp \
           $$PWD/src/TexturePack.cpp \
           $$PWD/src/FirstPersonCamera.cpp \
-					$$PWD/src/main.cpp
+          $$PWD/imgui/src/*.cpp \
+          $$PWD/src/main.cpp
 # same for the .h files
 HEADERS+= $$PWD/include/NGLScene.h \
           $$PWD/include/FrameBufferObject.h \
@@ -28,9 +29,12 @@ HEADERS+= $$PWD/include/NGLScene.h \
           $$PWD/include/TextureTypes.h \
           $$PWD/include/TexturePack.h \
           $$PWD/include/ScopedBind.h \
-          $$PWD/include/WindowParams.h
+          $$PWD/include/WindowParams.h \
+          $$PWD/imgui/include/*.h
 # and add the include dir into the search path for Qt and make
 INCLUDEPATH +=./include
+INCLUDEPATH += $$PWD/imgui/include
+
 # where our exe is going to live (root of project)
 DESTDIR=./
 # add the glsl shader files
