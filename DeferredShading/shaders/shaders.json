@@ -1,0 +1,182 @@
+{
+  "ShaderProgram": {
+    "name": "GeometryPassShader",
+     "debug" : false,
+      "Shaders"  : [
+        {
+          "type": "Vertex",
+          "name": "GeometryPassVertex",
+          "path" : ["shaders/GeometryPassVertex.glsl"]
+        },
+        {
+          "type": "Fragment",
+          "name": "GeometryPassFragment",
+          "path" : ["shaders/GeometryPassFragment.glsl"]
+
+        }
+      ],
+      "Uniforms" :
+       [
+         {"name" : "albedoSampler", "type" : "int", "value" :"0"} ,
+         {"name" : "metallicSampler", "type" : "int", "value" :"1"} ,
+         {"name" : "roughnessSampler", "type" : "int", "value" :"2"} ,
+         {"name" : "normalMapSampler", "type" : "int", "value" :"3"}
+       ]
+ },
+    "ShaderProgram": {
+      "name": "GeometryPassCheckerShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "GeometryPassCheckVertex",
+        "path" : ["shaders/GeometryPassVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "GeometryPassCheckFragment",
+        "path" : ["shaders/CheckGeoPassFragment.glsl"]
+
+      }
+    ],
+    "Uniforms" :
+     [
+       {"name" : "colour1", "type" : "vec4", "value" :"0.9 0.9 0.9 1.0"} ,
+       {"name" : "colour2", "type" : "vec4", "value" :"0.6 0.6 0.6 1.0"} ,
+       {"name" : "checkSize", "type" : "float", "value" :"60.0"}
+     ]
+    },
+    "ShaderProgram": {
+      "name": "BloomPassShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "BloomPassCheckVertex",
+        "path" : ["shaders/LightingPassVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "BloomPassFragment",
+        "path" : ["shaders/BloomFragment.glsl"]
+
+      }
+    ]
+   },
+    "ShaderProgram": {
+      "name": "SSAOPassShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "SSAOPassVertex",
+        "path" : ["shaders/LightingPassVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "SSAOPassFragment",
+        "path" : ["shaders/SSAOFragment.glsl"]
+
+      }
+    ]
+   },
+    "ShaderProgram": {
+      "name": "SSAOBlurShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "SSAOBlurPassVertex",
+        "path" : ["shaders/LightingPassVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "SSAOBlurPassFragment",
+        "path" : ["shaders/SSAOBlurFragment.glsl"]
+
+      }
+    ]
+   },
+    "ShaderProgram": {
+      "name": "BloomPassFinalShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "BloomPassFinalVertex",
+        "path" : ["shaders/LightingPassVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "BloomPassFinalFragment",
+        "path" : ["shaders/BloomFinalFragment.glsl"]
+
+      }
+    ]
+   },
+    "ShaderProgram": {
+      "name": "DebugShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "DebugVertex",
+        "path" : ["shaders/LightingPassVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "DebugFragment",
+        "path" : ["shaders/DebugFrag.glsl"]
+
+      }
+    ]
+   },
+    "ShaderProgram": {
+      "name": "ColourShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "ColourVertex",
+        "path" : ["shaders/ColourVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "ColourFragment",
+        "path" : ["shaders/ColourFragment.glsl"]
+
+      }
+    ]
+   },
+
+    "ShaderProgram": {
+      "name": "LightingPassShader",
+       "debug" : false,
+
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "LightingPassVertex",
+        "path" : ["shaders/LightingPassVertex.glsl"]
+       },
+      {
+        "type": "Fragment",
+        "name": "LightingPassFragment",
+        "path" : ["shaders/LightingPassFragment.glsl"],
+        "edit" : [{"search" : "@numLights", "replace" : "24"}]
+
+      }
+    ],
+        "Uniforms" :
+         [
+           {"name" : "positionSampler", "type" : "int", "value" :"0"} ,
+           {"name" : "normalSampler", "type" : "int", "value" :"1"} ,
+           {"name" : "albedoMetallicSampler", "type" : "int", "value" :"2"} ,
+           {"name" : "aoSampler", "type" : "int", "value" :"3"},
+           {"name" : "ssaoSampler", "type" : "int", "value" :"4"}
+         ]
+   }
+
+
+
+}
