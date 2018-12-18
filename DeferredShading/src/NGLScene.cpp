@@ -100,68 +100,34 @@ void NGLScene::initializeGL()
   // now to load the shader and set the values
   // grab an instance of shader manager
   auto *shader=ngl::ShaderLib::instance();
-  // load geometry pass shader and setup uniforms
-  shader->loadShader(GeometryPassShader,"shaders/GeometryPassVertex.glsl","shaders/GeometryPassFragment.glsl");
-  shader->use(GeometryPassShader);
-  shader->setUniform("albedoSampler",0);
-  shader->setUniform("metallicSampler",1);
-  shader->setUniform("roughnessSampler",2);
-  shader->setUniform("normalMapSampler",3);
+  // load all the shaders from a json file
+  bool loaded=shader->loadFromJson("shaders/shaders.json");
+  if(!loaded)
+  {
+    std::cerr<<"problem loading shaders\n";
+    exit(EXIT_FAILURE);
+  }
 
-  shader->loadShader(GeometryPassCheckerShader,"shaders/GeometryPassVertex.glsl","shaders/CheckGeoPassFragment.glsl");
-  shader->use(GeometryPassCheckerShader);
-  shader->setUniform("colour1",0.9f,0.9f,0.9f,1.0f);
-  shader->setUniform("colour2",0.6f,0.6f,0.6f,1.0f);
-  shader->setUniform("checkSize",60.0f);
-
-  shader->loadShader(BloomPassShader,"shaders/LightingPassVertex.glsl","shaders/BloomFragment.glsl");
   shader->use(BloomPassShader);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
 
-  shader->loadShader(SSAOPassShader,"shaders/LightingPassVertex.glsl","shaders/SSAOFragment.glsl");
   shader->use(SSAOPassShader);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
 
-  shader->loadShader(SSAOBlurShader,"shaders/LightingPassVertex.glsl","shaders/SSAOBlurFragment.glsl");
   shader->use(SSAOBlurShader);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
 
-  shader->loadShader(BloomPassFinalShader,"shaders/LightingPassVertex.glsl","shaders/BloomFinalFragment.glsl");
   shader->use(BloomPassFinalShader);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
-  shader->loadShader(DebugShader,"shaders/LightingPassVertex.glsl","shaders/DebugFrag.glsl");
   shader->use(DebugShader);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
-  shader->loadShader(ColourShader,"shaders/ColourVertex.glsl","shaders/ColourFragment.glsl");
   shader->use(ColourShader);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
-  // need to load this one manually as it will be dynamically editied
-  shader->createShaderProgram(LightingPassShader);
-
-  shader->attachShader("LightingPassVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader(LightingPassFragment,ngl::ShaderType::FRAGMENT);
-  shader->loadShaderSource("LightingPassVertex","shaders/LightingPassVertex.glsl");
-  shader->loadShaderSource(LightingPassFragment,"shaders/LightingPassFragment.glsl");
-  // the shader has a tag called @numLights, edit this and set to 8
-  shader->editShader(LightingPassFragment,"@numLights",fmt::format("{0}",m_numLights));
-  shader->compileShader("LightingPassVertex");
-  shader->compileShader(LightingPassFragment);
-  shader->attachShaderToProgram(LightingPassShader,"LightingPassVertex");
-  shader->attachShaderToProgram(LightingPassShader,LightingPassFragment);
-
- shader->linkProgramObject(LightingPassShader);
-  (*shader)[LightingPassShader]->use();
-  shader->setUniform("positionSampler",0);
-  shader->setUniform("normalSampler",1);
-  shader->setUniform("albedoMetallicSampler",2);
-  shader->setUniform("aoSampler",3);
-  shader->setUniform("ssaoSampler",4);
 
   ngl::VAOPrimitives::instance()->createTrianglePlane("floor",30,30,10,10,ngl::Vec3::up());
   ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,4);

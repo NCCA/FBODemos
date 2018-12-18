@@ -156,7 +156,7 @@ private:
         float linear= 0.7f;
         float quadratic=1.8f;
     };
-    size_t m_numLights=64;
+    size_t m_numLights=24;
     bool m_showLights=true;
     std::vector<Light> m_lights;
     std::vector<ngl::Vec3> m_ssaoKernel;
