@@ -46,6 +46,7 @@ auto DebugShader="DebugShader";
 auto ColourShader="ColourShader";
 auto SSAOPassShader="SSAOPassShader";
 auto SSAOBlurShader="SSAOBlurShader";
+auto DOFShader="DOFShader";
 void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
@@ -143,6 +144,25 @@ void NGLScene::initializeGL()
   GLuint attachmentsLighting[2] = { GL_COLOR_ATTACHMENT0 ,GL_COLOR_ATTACHMENT1};
   glDrawBuffers(2, attachmentsLighting);
 
+
+
+  ngl::msg->addMessage("Creating m_dofTarget");
+  m_dofTarget=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_dofTarget->bind();
+  m_dofTarget->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
+                                     GLTextureDataType::FLOAT,
+                                     GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
+                                     GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
+
+  m_dofTarget->addDepthBuffer(GLTextureDepthFormats::DEPTH_COMPONENT24,
+                              GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
+                              GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,
+                              true
+                              );
+  GLuint attachmentsDOF[1] = { GL_COLOR_ATTACHMENT0 };
+  glDrawBuffers(1, attachmentsDOF);
+
+
   ngl::msg->addMessage("Creating m_forwardPass");
 
   m_forwardPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
@@ -194,6 +214,22 @@ void NGLScene::initializeGL()
   }
   m_ssaoPass->unbind();
 
+
+
+  m_dofPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_dofPass->bind();
+  m_dofPass->addColourAttachment("blurTarget",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
+                                   GLTextureDataType::FLOAT,
+                                   GLTextureMinFilter::LINEAR,GLTextureMagFilter::LINEAR,
+                                   GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
+
+  if(!m_dofPass->isComplete())
+  {
+   ngl::msg->addWarning("FrameBuffer DOF incomplete");
+   m_dofPass->print();
+  }
+  m_dofPass->unbind();
+
   ngl::msg->addMessage("Creating PingPoing");
   for(auto &b : m_pingPongBuffer)
   {
@@ -229,19 +265,8 @@ void NGLScene::initializeGL()
 
   // load textures for render pass (only using 1 for all teapots)
   ngl::Texture t;
-  t.loadImage("textures/albedo.png");
-  //m_albedoTextureID=t.setTextureGL();
-  m_pbrTextures[0]=t.setTextureGL();
-  t.loadImage("textures/normal.png");
-  m_pbrTextures[1]=t.setTextureGL();
-  t.loadImage("textures/metallic.png");
-  m_pbrTextures[2]=t.setTextureGL();
-  t.loadImage("textures/roughness.png");
-  m_pbrTextures[3]=t.setTextureGL();
-  t.loadImage("textures/ao.png");
-  m_pbrTextures[4]=t.setTextureGL();
   t.loadImage("textures/floorNormal.png");
-  m_pbrTextures[5]=t.setTextureGL();
+  m_floorNormalTexture=t.setTextureGL();
 
   //m_specularTextureID=t.setTextureGL();
   createLights();
@@ -293,7 +318,21 @@ void NGLScene::createSSAOKernel()
 
 }
 
+void NGLScene::loadDOFUniforms()
+{
+  auto shader=ngl::ShaderLib::instance();
+  shader->use(DOFShader);
 
+  float magnification = m_focalLenght / abs(m_focalDistance - m_focalLenght);
+  float blur = m_focalLenght * magnification / m_fstop;
+  float ppm = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
+  shader->setUniform("depthRange",ngl::Vec2(0.1f,50.0f));
+  shader->setUniform("blurCoefficient",blur);
+  shader->setUniform("PPM",ppm);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  shader->setUniform("focusDistance",m_focusDistance);
+
+}
 
 void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
 {
@@ -371,7 +410,7 @@ void NGLScene::geometryPass()
   shader->use(GeometryPassCheckerShader);
   shader->setUniform("normalMapSampler",0);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D,m_pbrTextures[5]);
+  glBindTexture(GL_TEXTURE_2D,m_floorNormalTexture);
 
   m_transform.reset();
   m_transform.setPosition(0.0f,-0.45f,0.0f);
@@ -407,8 +446,6 @@ void NGLScene::lightingPass()
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D, m_pbrTextures[4]);
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, m_ssaoPass->getTextureID("ssao"));
   shader->setUniform("viewPos",m_cam.getEye());
@@ -527,7 +564,11 @@ void NGLScene::finalPass()
 {
   auto *shader=ngl::ShaderLib::instance();
 
-  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
+  // going to re-use the ping pong buffer here and use it in the DOF
+  m_dofTarget->bind();
+  m_screenQuad->bind();
+
+//  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   shader->use(BloomPassFinalShader);
   glActiveTexture(GL_TEXTURE0);
@@ -540,11 +581,43 @@ void NGLScene::finalPass()
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-  m_screenQuad->bind();
+  m_screenQuad->draw();
+  m_dofTarget->unbind();
+
+  // first DOF
+  m_dofPass->bind();
+  shader->use(DOFShader);
+  loadDOFUniforms();
+  m_dofPass->setViewport();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_dofTarget->getTextureID("fragColour"));
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, m_dofTarget->getDepthTextureID());
+
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, m_dofPass->getTextureID("blurTarget"));
+
+  // HORIZONTAL BLUR
+  shader->setUniform("colourSampler",0);
+  shader->setUniform("depthSampler",1);
+  shader->setUniform("uTexelOffset",1.0f,0.0f);
+  m_screenQuad->draw();
+  m_dofPass->unbind();
+
+
+  // Vertical Blur to default FB
+  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
+  glClear(GL_DEPTH_BUFFER_BIT);
+  shader->setUniform("uTexelOffset",0.0f,1.0f);
+  shader->setUniform("colourSampler",2);
+  glViewport(0, 0, m_win.width, m_win.height);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
   m_screenQuad->unbind();
 
 
+// debugBlit(m_dofPass->getTextureID("blurTarget"));
 }
 
 
@@ -749,7 +822,8 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_M : m_textureDebug^=true; break;
   case Qt::Key_Comma : --m_debugTextureID; break;
   case Qt::Key_Period : ++m_debugTextureID; break;
-
+  case Qt::Key_Semicolon : m_focusDistance+=0.1f;std::cout<<m_focusDistance<<'\n'; break;
+  case Qt::Key_QuoteLeft : m_focusDistance-=0.1f; std::cout<<m_focusDistance<<'\n'; break;
   case Qt::Key_Space :
     m_cam.set({0,2,10},{0,0,0},{0,1,0});
   break;

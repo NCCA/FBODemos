@@ -161,6 +161,26 @@
    },
 
     "ShaderProgram": {
+          "name": "DOFShader",
+           "debug" : false,
+        "Shaders"  : [
+          {
+            "type": "Vertex",
+            "name": "DOFVertex",
+            "path" : ["shaders/LightingPassVertex.glsl"]
+          },
+          {
+            "type": "Fragment",
+            "name": "DOFFragment",
+            "path" : ["shaders/DOFFragment.glsl"]
+
+          }
+        ],
+          "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+
+       },
+
+    "ShaderProgram": {
       "name": "LightingPassShader",
        "debug" : false,
 

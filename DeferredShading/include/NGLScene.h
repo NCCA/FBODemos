@@ -130,23 +130,28 @@ private:
     void ssaoPass();
     void bloomBlurPass();
     void finalPass();
-
+    void loadDOFUniforms();
     void createSSAOKernel();
     void debugBlit(GLuint id);
-    std::unique_ptr<ngl::AbstractVAO> m_screenQuad;
-
+    std::unique_ptr<ngl::AbstractVAO>  m_screenQuad;
     std::unique_ptr<FrameBufferObject> m_renderFBO;
     std::unique_ptr<FrameBufferObject> m_lightingFBO;
     std::unique_ptr<FrameBufferObject> m_forwardPass;
     std::unique_ptr<FrameBufferObject> m_ssaoPass;
+    std::unique_ptr<FrameBufferObject> m_dofPass;
+    std::unique_ptr<FrameBufferObject> m_dofTarget;
+
     std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
-//    GLuint m_albedoTextureID=0;
-//    GLuint m_specularTextureID=0;
-    std::array<GLuint,6> m_pbrTextures;
+    GLuint m_floorNormalTexture;
     GLuint m_noiseTexture=0;
     bool m_debugOn=false;
     int m_debugAttachment=0;
     void createLights();
+    float m_fstop=2.8f;
+    int m_av=3; // used in f-stop calc where fstop=sqrtf(2^m_av)
+    float m_focalLenght=1.0f;
+    float m_focalDistance=8.0f;
+    float m_focusDistance=0.55f;
 
     struct Light
     {
