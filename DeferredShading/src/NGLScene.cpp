@@ -343,7 +343,7 @@ void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
   ngl::Mat4  MVP;
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
-  M=_mouse*m_transform.getMatrix();
+  M=m_transform.getMatrix();
   MV=  m_cam.getView()*M;
   MVP= m_cam.getProjection()*MV;
   normalMatrix=MV;
@@ -361,23 +361,6 @@ void NGLScene::geometryPass()
   auto *shader=ngl::ShaderLib::instance();
   ScopedBind<FrameBufferObject> t(m_renderFBO.get());
   m_renderFBO->setViewport();
-//  GLuint attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,GL_COLOR_ATTACHMENT3 };
-//  glDrawBuffers(4, attachments);
-/*
-  // bind textures for teapots
-  // albedo channel 0
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[0]);
-    // metallic 1
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[2]);
-    // roughness 2
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[3]);
-    // normal map
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D,m_pbrTextures[1]);
-*/
   ngl::Random *rng=ngl::Random::instance();
   ngl::Random::instance()->setSeed(1235);
   TexturePack tp;
@@ -395,9 +378,9 @@ void NGLScene::geometryPass()
   // rotate the teapot
   m_transform.reset();
   static float s_rot=0.1f;
-  for (float z=-10.0f; z<10.0f; z+=1.8f)
+  for (float z=-14.0f; z<14.0f; z+=1.8f)
   {
-    for(float x=-10.0f; x<10.0f; x+=1.8f)
+    for(float x=-14.0f; x<14.0f; x+=1.8f)
     {
       tp.activateTexturePack(textures[static_cast<int>(rng->randomPositiveNumber(5))]);
 
@@ -575,9 +558,9 @@ void NGLScene::finalPass()
   glBindTexture(GL_TEXTURE_2D, m_forwardPass->getTextureID("fragColour"));
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[0]->getTextureID("fragColour"));
-  shader->setUniform("bloom", 1);
-  shader->setUniform("exposure", 1.0f);
-  shader->setUniform("gamma",2.2f);
+  shader->setUniform("bloom", m_useBloom);
+  shader->setUniform("exposure", m_exposure);
+  shader->setUniform("gamma",m_gamma);
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
@@ -622,8 +605,7 @@ void NGLScene::finalPass()
   {
     debugBlit(m_dofTarget->getTextureID("fragColour"));
   }
-  drawUI();
-// debugBlit(m_dofPass->getTextureID("blurTarget"));
+  // debugBlit(m_dofPass->getTextureID("blurTarget"));
 }
 
 
@@ -726,6 +708,9 @@ void NGLScene::paintGL()
       //ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
+    if(  m_showUI==true)
+      drawUI();
+
     if(m_textureDebug==true)
     {
       debugBlit(m_debugTextureID);
@@ -769,7 +754,7 @@ void NGLScene::editLightShader()
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
   shader->setUniform("albedoMetallicSampler",2);
-  shader->setUniform("aoSampler",3);
+  //shader->setUniform("aoSampler",3);
   shader->setUniform("ssaoSampler",4);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   createLights();
@@ -791,8 +776,8 @@ void NGLScene::createLights()
     float z=sinf(i)*m_lightRadius;
     float y=m_lightYOffset+sinf(i*m_freq);
     l.position.set(x,y,z);//=rng->getRandomVec3()*5.0f;
-    l.colour=rng->getRandomColour3()*4.0;
-    l.colour.clamp(1.0f,4.0f);
+    l.colour=rng->getRandomColour3()*m_lightMaxIntensity;
+    l.colour.clamp(1.0f,m_lightMaxIntensity);
     l.linear=rng->randomPositiveNumber(0.5f)+0.2f;
     l.quadratic=rng->randomNumber(1.0f)+1.0f;
     i+=circleStep;
@@ -833,15 +818,14 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_M : m_textureDebug^=true; break;
   case Qt::Key_Comma : --m_debugTextureID; break;
   case Qt::Key_Period : ++m_debugTextureID; break;
-  case Qt::Key_Semicolon : m_focusDistance+=0.1f;std::cout<<m_focusDistance<<'\n'; break;
-  case Qt::Key_QuoteLeft : m_focusDistance-=0.1f; std::cout<<m_focusDistance<<'\n'; break;
+  case Qt::Key_U : m_showUI^=true; break;
   case Qt::Key_Space :
     m_cam.set({0,2,10},{0,0,0},{0,1,0});
   break;
   case Qt::Key_4 :
     for(auto &l : m_lights)
     {
-      l.colour.set(4.0f,4.0f,4.0f);
+      l.colour.set(m_lightMaxIntensity,m_lightMaxIntensity,m_lightMaxIntensity);
     }
   break;
   case Qt::Key_5 :
@@ -849,8 +833,8 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
     auto rng=ngl::Random::instance();
     for(auto &l : m_lights)
     {
-      l.colour=rng->getRandomColour3()*4.0f;
-      l.colour.clamp(1.0f,4.0f);
+      l.colour=rng->getRandomColour3()*m_lightMaxIntensity;
+      l.colour.clamp(1.0f,m_lightMaxIntensity);
     }
   break;
   }
@@ -966,22 +950,29 @@ void NGLScene::drawUI()
   ImGui::SliderFloat("Focus Distance", &m_focusDistance,0.0f,10.0f);
   ImGui::Separator();
   ImGui::Checkbox("Use AO", &m_useAO);
+  ImGui::Checkbox("Use Bloom", &m_useBloom);
+  ImGui::Separator();
+  ImGui::SliderFloat("Exposure", &m_exposure,0.0f,5.0f);
+  ImGui::SliderFloat("Gamma", &m_gamma,0.1f,4.0f);
+
   ImGui::End();
 
   ImGui::Begin("Lights");
   if (ImGui::SliderInt("Number of Lights", &m_numLights,1,64) )
     editLightShader();
+  ImGui::SliderFloat("Light intensity max", &m_lightMaxIntensity,1.0f,200.0f);
   ImGui::Separator();
 
-  ImGui::SliderFloat("Light Radius", &m_lightRadius,0.0f,40.0f);
-  ImGui::SliderFloat("Light Y", &m_lightYOffset,0.0f,40.0f);
+
+  ImGui::SliderFloat("Light Radius", &m_lightRadius,0.0f,20.0f);
+  ImGui::SliderFloat("Light Y", &m_lightYOffset,-20.0f,20.0f);
   ImGui::Checkbox("Light Random", &m_lightRandom);
   ImGui::Separator();
   if(ImGui::Button("White"))
   {
     for(auto &l : m_lights)
     {
-      l.colour.set(4.0f,4.0f,4.0f);
+      l.colour.set(m_lightMaxIntensity,m_lightMaxIntensity,m_lightMaxIntensity);
     }
   }
   if(ImGui::Button("Rand"))
@@ -990,13 +981,12 @@ void NGLScene::drawUI()
     rng->setSeed();
     for(auto &l : m_lights)
     {
-      l.colour=rng->getRandomColour3()*4.0f;
-      l.colour.clamp(1.0f,4.0f);
+      l.colour=rng->getRandomColour3()*m_lightMaxIntensity;
+      l.colour.clamp(1.0f,m_lightMaxIntensity);
     }
 
   }
-
-    ImGui::End();
+  ImGui::End();
 
   ImGui::Render();
 

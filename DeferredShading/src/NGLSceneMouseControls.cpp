@@ -6,6 +6,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 void NGLScene::mouseMoveEvent( QMouseEvent* _event )
 {
+
   // only update on alt key pressed
   if(!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier))
     return;

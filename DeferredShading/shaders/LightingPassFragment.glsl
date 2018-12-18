@@ -74,14 +74,17 @@ void main()
 
   vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
 
-  vec3 albedo     = texture(albedoMetallicSampler, uv).rgb;//  pow(texture(albedoMetallicSampler, uv).rgb, vec3(2.2));
+  vec3 albedo     =   pow(texture(albedoMetallicSampler, uv).rgb, vec3(2.2));
   float metallic  = texture(albedoMetallicSampler,uv).a;
   float roughness = texture(normalSampler, uv).a;
-  float ao        = texture(aoSampler, uv).r;
+
+
+
+  //float ao        = texture(aoSampler, uv).r;
   float ambientOcclusion = texture(ssaoSampler, uv).r;
 
   vec3 WorldPos = texture(positionSampler, uv).rgb;
-  vec3 N = normalize(texture(normalSampler, uv).rgb);
+  vec3 N = texture(normalSampler, uv).rgb;
   vec3 V = normalize(viewPos - WorldPos);
 
   // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0

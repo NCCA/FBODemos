@@ -180,9 +180,11 @@ private:
     long m_bloomBlurPassDuration=0;
     long m_finalPassDuration=0;
     long m_totalDuration=0;
-
+    float m_gamma=2.2f;
     bool m_useDOF=true;
-
+    bool m_useBloom=true;
+    float m_exposure=1.0f;
+    float m_lightMaxIntensity=4.0f;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the keys being pressed
     //----------------------------------------------------------------------------------------------------------------------
@@ -198,7 +200,7 @@ private:
     QElapsedTimer m_timer;
     bool m_textureDebug=false;
     GLuint m_debugTextureID=1;
-
+    bool m_showUI=true;
 
 };
 
