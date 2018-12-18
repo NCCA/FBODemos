@@ -10,6 +10,8 @@
 #include <ngl/VAOFactory.h>
 #include <ngl/Texture.h>
 #include "ScopedBind.h"
+#include "TexturePack.h"
+
 NGLScene::NGLScene()
 {
   setTitle("Deferred Render");
@@ -32,35 +34,6 @@ void NGLScene::resizeGL( int _w, int _h )
   m_cam.setProjection(45.0f, static_cast<float>( _w ) / _h, 0.05f, 50.0f );
   m_win.width  = static_cast<int>( _w * devicePixelRatio() );
   m_win.height = static_cast<int>( _h * devicePixelRatio() );
-}
-
-void NGLScene::createSSAOKernel()
-{
-  auto rng=ngl::Random::instance();
-  for (unsigned int i = 0; i < 64; ++i)
-  {
-      ngl::Vec3 sample(rng->randomNumber(),rng->randomNumber(),rng->randomPositiveNumber());
-      sample.normalize();
-      float scale = static_cast<float>(i) / 64.0f;
-      scale   = ngl::lerp(0.1f, 1.0f, scale * scale);
-      sample *= scale;
-      m_ssaoKernel.push_back(sample);
-  }
-  std::vector<ngl::Vec3> ssaoNoise;
-
-  for (unsigned int i = 0; i < 16; i++)
-  {
-      ngl::Vec3 noise(rng->randomNumber(), rng->randomNumber(),  0.0f);
-      ssaoNoise.push_back(noise);
-  }
-
-  glGenTextures(1, &m_noiseTexture);
-  glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 auto GeometryPassShader="GeometryPassShader";
@@ -108,27 +81,6 @@ void NGLScene::initializeGL()
     exit(EXIT_FAILURE);
   }
 
-  shader->use(BloomPassShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
-
-  shader->use(SSAOPassShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
-
-  shader->use(SSAOBlurShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
-
-  shader->use(BloomPassFinalShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
-  shader->use(DebugShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
-  shader->use(ColourShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
   ngl::VAOPrimitives::instance()->createTrianglePlane("floor",30,30,10,10,ngl::Vec3::up());
   ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,4);
   ngl::msg->addMessage("Creating m_renderFBO");
@@ -139,7 +91,7 @@ void NGLScene::initializeGL()
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
-  m_renderFBO->addColourAttachment("normal",GLAttatchment::_1,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
+  m_renderFBO->addColourAttachment("normal",GLAttatchment::_1,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -173,11 +125,11 @@ void NGLScene::initializeGL()
   ngl::msg->addMessage("Creating m_lightingFBO");
   m_lightingFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_lightingFBO->bind();
-  m_lightingFBO->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
+  m_lightingFBO->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
-  m_lightingFBO->addColourAttachment("brightness",GLAttatchment::_1,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
+  m_lightingFBO->addColourAttachment("brightness",GLAttatchment::_1,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -195,11 +147,11 @@ void NGLScene::initializeGL()
 
   m_forwardPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_forwardPass->bind();
-  m_forwardPass->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
+  m_forwardPass->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
-  m_forwardPass->addColourAttachment("brightness",GLAttatchment::_1,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
+  m_forwardPass->addColourAttachment("brightness",GLAttatchment::_1,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -225,7 +177,7 @@ void NGLScene::initializeGL()
 
   m_ssaoPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_ssaoPass->bind();
-  m_ssaoPass->addColourAttachment("ssao",GLAttatchment::_0,GLTextureFormat::RGB,GLTextureInternalFormat::RED,
+  m_ssaoPass->addColourAttachment("ssao",GLAttatchment::_0,GLTextureFormat::RED,GLTextureInternalFormat::RED,
                                    GLTextureDataType::FLOAT,
                                    GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                    GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,false);
@@ -247,7 +199,7 @@ void NGLScene::initializeGL()
   {
     b=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
     b->bind();
-    b->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
+    b->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                      GLTextureDataType::FLOAT,
                                      GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
                                      GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
@@ -295,7 +247,52 @@ void NGLScene::initializeGL()
   createLights();
   m_randomUpdateTimer=startTimer(400);
   createSSAOKernel();
+  TexturePack tp;
+  tp.loadJSON("textures/textures.json");
+
 }
+
+
+void NGLScene::createSSAOKernel()
+{
+  auto rng=ngl::Random::instance();
+  for (unsigned int i = 0; i < 64; ++i)
+  {
+      ngl::Vec3 sample(rng->randomNumber(),rng->randomNumber(),rng->randomPositiveNumber());
+      sample.normalize();
+      float scale = static_cast<float>(i) / 64.0f;
+      scale   = ngl::lerp(0.1f, 1.0f, scale * scale);
+      sample *= scale;
+      m_ssaoKernel.push_back(sample);
+  }
+  std::vector<ngl::Vec3> ssaoNoise;
+
+  for (unsigned int i = 0; i < 16; i++)
+  {
+      ngl::Vec3 noise(rng->randomNumber(), rng->randomNumber(),  0.0f);
+      ssaoNoise.push_back(noise);
+  }
+
+  glGenTextures(1, &m_noiseTexture);
+  glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  auto *shader=ngl::ShaderLib::instance();
+  shader->use(SSAOPassShader);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+
+  // Send kernel + rotation
+  for (unsigned int i = 0; i < 64; ++i)
+    shader->setUniform(fmt::format("samples[{0}]",i),m_ssaoKernel[i]);
+  shader->use(SSAOBlurShader);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+
+}
+
 
 
 void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
@@ -324,9 +321,9 @@ void NGLScene::geometryPass()
   auto *shader=ngl::ShaderLib::instance();
   ScopedBind<FrameBufferObject> t(m_renderFBO.get());
   m_renderFBO->setViewport();
-  GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-  glDrawBuffers(3, attachments);
-
+//  GLuint attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,GL_COLOR_ATTACHMENT3 };
+//  glDrawBuffers(4, attachments);
+/*
   // bind textures for teapots
   // albedo channel 0
     glActiveTexture(GL_TEXTURE0);
@@ -340,7 +337,18 @@ void NGLScene::geometryPass()
     // normal map
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D,m_pbrTextures[1]);
-
+*/
+  ngl::Random *rng=ngl::Random::instance();
+  ngl::Random::instance()->setSeed(1235);
+  TexturePack tp;
+    static  std::string textures[]=
+    {
+      "copper",
+      "greasy",
+      "panel",
+      "rusty",
+      "wood"
+    };
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   shader->use(GeometryPassShader);
   // if we want a different camera we wouldset this here
@@ -351,6 +359,8 @@ void NGLScene::geometryPass()
   {
     for(float x=-10.0f; x<10.0f; x+=1.8f)
     {
+      tp.activateTexturePack(textures[static_cast<int>(rng->randomPositiveNumber(5))]);
+
       m_transform.setRotation(0,s_rot,0);
       m_transform.setPosition(x,0.0f,z);
       loadMatricesToShader(m_mouseGlobalTX);
@@ -433,7 +443,7 @@ void NGLScene::forwardPass()
 
   //glClear(  GL_DEPTH_BUFFER_BIT);
   shader->use(ColourShader);
-  m_transform.setScale(0.2f,0.2f,0.2f);
+  m_transform.setScale(0.8f,0.8f,0.8f);
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   for(auto l : m_lights)
   {
@@ -452,10 +462,11 @@ void NGLScene::bloomBlurPass()
   auto *shader=ngl::ShaderLib::instance();
   size_t amount = 10;
   shader->use(BloomPassShader);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   m_screenQuad->bind();
   m_pingPongBuffer[0]->setViewport();
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+//  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   bool firstTime=true;
   bool horizontal=true;
@@ -464,6 +475,7 @@ void NGLScene::bloomBlurPass()
   {
     m_pingPongBuffer[horizontal]->bind();
     shader->setUniform("horizontal", bool(horizontal));
+    shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,
                   firstTime ? m_forwardPass->getTextureID("brightness") :
@@ -483,15 +495,11 @@ void NGLScene::ssaoPass()
 {
   auto *shader=ngl::ShaderLib::instance();
   shader->use(SSAOPassShader);
-  shader->setUniform("screenResolution",m_win.width,m_win.height);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
   shader->setUniform("texNoise",2);
   m_ssaoPass->bind();
-  // Send kernel + rotation
-  for (unsigned int i = 0; i < 64; ++i)
-    shader->setUniform(fmt::format("samples[{0}]",i),m_ssaoKernel[i]);
-
   shader->setUniform("projection", m_cam.getProjection());
 
   glActiveTexture(GL_TEXTURE0);
@@ -501,6 +509,7 @@ void NGLScene::ssaoPass()
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
   m_screenQuad->bind();
+  m_ssaoPass->setViewport();
   m_screenQuad->draw();
   //glClear(GL_COLOR_BUFFER_BIT );
   shader->use(SSAOBlurShader);
@@ -633,6 +642,13 @@ void NGLScene::paintGL()
       ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
+    if(m_textureDebug==true)
+    {
+      debugBlit(m_debugTextureID);
+    }
+
+
+
 }
   std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
   ngl::msg->drawLine();
@@ -664,12 +680,14 @@ void NGLScene::editLightShader()
   shader->compileShader(LightingPassFragment);
   shader->linkProgramObject(LightingPassShader);
   shader->use(LightingPassShader);
+
   m_lights.resize(m_numLights);
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
   shader->setUniform("albedoMetallicSampler",2);
   shader->setUniform("aoSampler",3);
   shader->setUniform("ssaoSampler",4);
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   createLights();
   setTitle(QString("Deferred Renderer %0 Lights").arg(m_numLights));
 }
@@ -728,6 +746,10 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_O : m_freq-=0.02f; break;
   case Qt::Key_R : m_lightRandom^=true; break;
   case Qt::Key_A : m_useAO^=true; break;
+  case Qt::Key_M : m_textureDebug^=true; break;
+  case Qt::Key_Comma : --m_debugTextureID; break;
+  case Qt::Key_Period : ++m_debugTextureID; break;
+
   case Qt::Key_Space :
     m_cam.set({0,2,10},{0,0,0},{0,1,0});
   break;
@@ -818,6 +840,8 @@ void NGLScene::timerEvent(QTimerEvent *_event)
     if(_event->timerId()==m_randomUpdateTimer)
     {
     auto rng=ngl::Random::instance();
+    ngl::Random::instance()->setSeed();
+
     for(auto &l : m_lights)
     {
       l.position=rng->getRandomPoint(10,5,10);

@@ -4,7 +4,7 @@ layout (location=0) out vec3 position;
 layout (location=1) out vec4 normal;
 // albedoMetallic RGB == albedo A=metallic
 layout (location=2) out vec4 albedoMetallic;
-layout (location=4) out vec3 positionVS;
+layout (location=3) out vec3 positionVS;
 
 in VertexData
 {
@@ -13,6 +13,7 @@ in VertexData
   vec3 normal;
   vec3 fragVS;
 }vertexIn;
+
 
 uniform sampler2D albedoSampler;
 uniform sampler2D metallicSampler;

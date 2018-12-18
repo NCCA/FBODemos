@@ -5,7 +5,6 @@
 #include <ngl/Mat4.h>
 #include <ngl/AbstractVAO.h>
 #include <QElapsedTimer>
-
 #include "FrameBufferObject.h"
 #include "FirstPersonCamera.h"
 #include <QOpenGLWindow>
@@ -180,6 +179,8 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     float m_lastFrame = 0.0f;
     QElapsedTimer m_timer;
+    bool m_textureDebug=false;
+    GLuint m_debugTextureID=1;
 
 
 };

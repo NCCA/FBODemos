@@ -2,6 +2,7 @@
 layout (location = 0) out vec3 position;
 layout (location = 1) out vec4 normal;
 layout (location = 2) out vec4 albedoSpec;
+layout (location = 3) out vec3 positionVS;
 
 uniform sampler2D normalMapSampler;
 
@@ -10,6 +11,7 @@ in VertexData
   vec3 fragPos;
   vec2 uv;
   vec3 normal;
+  vec3 fragVS;
 }vertexIn;
 
 uniform float checkSize=10.0;
@@ -53,14 +55,11 @@ void main()
     // also store the per-fragment normals into the gbuffer
 //    normal.rgb = normalize(vertexIn.normal);
     normal.rgb = getNormalFromMap(vertexIn.fragPos,vertexIn.normal,vertexIn.uv);
+    positionVS=vertexIn.fragVS;
 
-    //roughness is w
-    normal.w=20.0;
     // and the diffuse per-fragment color
-    albedoSpec.rgb = checker( vertexIn.uv).rgb;
-    // w is metallic
-    albedoSpec.a=0.4;
-    // store specular intensity in gAlbedoSpec's alpha component
-    albedoSpec.a = 0.0f;
+    albedoSpec = checker( vertexIn.uv);
+    //roughness is w
+    normal.w=albedoSpec.a;
 
 }

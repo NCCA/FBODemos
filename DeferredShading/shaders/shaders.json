@@ -41,7 +41,7 @@
     ],
     "Uniforms" :
      [
-       {"name" : "colour1", "type" : "vec4", "value" :"0.9 0.9 0.9 1.0"} ,
+       {"name" : "colour1", "type" : "vec4", "value" :"0.9 0.9 0.9 0.0"} ,
        {"name" : "colour2", "type" : "vec4", "value" :"0.6 0.6 0.6 1.0"} ,
        {"name" : "checkSize", "type" : "float", "value" :"60.0"}
      ]
@@ -61,7 +61,8 @@
         "path" : ["shaders/BloomFragment.glsl"]
 
       }
-    ]
+    ],
+      "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
    },
     "ShaderProgram": {
       "name": "SSAOPassShader",
@@ -78,7 +79,9 @@
         "path" : ["shaders/SSAOFragment.glsl"]
 
       }
-    ]
+    ],
+        "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+
    },
     "ShaderProgram": {
       "name": "SSAOBlurShader",
@@ -95,7 +98,9 @@
         "path" : ["shaders/SSAOBlurFragment.glsl"]
 
       }
-    ]
+    ],
+        "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+
    },
     "ShaderProgram": {
       "name": "BloomPassFinalShader",
@@ -112,7 +117,9 @@
         "path" : ["shaders/BloomFinalFragment.glsl"]
 
       }
-    ]
+    ],
+        "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+
    },
     "ShaderProgram": {
       "name": "DebugShader",
@@ -129,7 +136,9 @@
         "path" : ["shaders/DebugFrag.glsl"]
 
       }
-    ]
+    ],
+        "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+
    },
     "ShaderProgram": {
       "name": "ColourShader",
@@ -146,7 +155,9 @@
         "path" : ["shaders/ColourFragment.glsl"]
 
       }
-    ]
+    ],
+      "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+
    },
 
     "ShaderProgram": {
@@ -176,7 +187,5 @@
            {"name" : "ssaoSampler", "type" : "int", "value" :"4"}
          ]
    }
-
-
 
 }
