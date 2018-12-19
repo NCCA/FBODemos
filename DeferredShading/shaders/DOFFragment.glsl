@@ -3,11 +3,14 @@
 // this example based on https://github.com/tsherif/webgl2examples
 #define MAX_BLUR 20.0
 
-uniform   float focusDistance;
-uniform   float blurCoefficient;
-uniform   float PPM;
-uniform   vec2  depthRange;
-uniform   vec2 screenResolution;
+
+layout( std140) uniform dofUBO
+{
+  vec4 fbPPM; // pack 3 floats focusDistance, blurCoefficent and PPM
+  vec4 drSR; // pack 2 vec2  DepthRange screenResolution
+}dof;
+
+//uniform   vec2 screenResolution;
 uniform vec2 uTexelOffset;
 uniform sampler2D colourSampler;
 uniform sampler2D depthSampler;
@@ -15,6 +18,12 @@ layout (location=0)out vec4 fragColor;
 
 void main()
 {
+  float focusDistance=dof.fbPPM[0];
+  float blurCoefficient=dof.fbPPM[1];
+  float PPM=dof.fbPPM[2];
+  vec2  depthRange=vec2(dof.drSR.x,dof.drSR.y);
+  vec2 screenResolution=vec2(dof.drSR.z,dof.drSR.w);
+
     // get location of fragment
     ivec2 fragCoord = ivec2(gl_FragCoord.xy);
     ivec2 resolution = ivec2(screenResolution) - 1;

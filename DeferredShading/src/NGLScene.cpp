@@ -20,6 +20,9 @@ NGLScene::NGLScene()
   setTitle("Deferred Render");
   m_lights.resize(m_numLights);
   m_timer.start();
+  m_fpsTimer =startTimer(0);
+  m_fps=0;
+  m_frames=0;
 
 }
 
@@ -327,11 +330,22 @@ void NGLScene::loadDOFUniforms()
   float magnification = m_focalLenght / abs(m_focalDistance - m_focalLenght);
   float blur = m_focalLenght * magnification / m_fstop;
   float ppm = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
-  shader->setUniform("depthRange",ngl::Vec2(0.1f,50.0f));
-  shader->setUniform("blurCoefficient",blur);
-  shader->setUniform("PPM",ppm);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-  shader->setUniform("focusDistance",m_focusDistance);
+  struct dofUBO
+  {
+      ngl::Vec4 fbPPM;
+      ngl::Vec4 drSR;
+  };
+
+  dofUBO dof;
+  dof.fbPPM.m_x=m_focusDistance;
+  dof.fbPPM.m_y=blur;
+  dof.fbPPM.m_z=ppm;
+  dof.drSR.m_x=0.1f;
+  dof.drSR.m_y=50.0f;
+  dof.drSR.m_z=m_win.width;
+  dof.drSR.m_w=m_win.height;
+
+  shader->setUniformBuffer("dofUBO",sizeof(dofUBO),&dof.fbPPM);
 
 }
 
@@ -343,15 +357,27 @@ void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
   ngl::Mat4  MVP;
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
-  M=m_transform.getMatrix();
-  MV=  m_cam.getView()*M;
-  MVP= m_cam.getProjection()*MV;
-  normalMatrix=MV;
-  normalMatrix.inverse().transpose();
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("M",M);
-  shader->setUniform("MV",MV);
+
+  struct transform
+  {
+    ngl::Mat4 MVP;
+    ngl::Mat4 normalMatrix;
+    ngl::Mat4 M;
+    ngl::Mat4 MV;
+  };
+  transform t;
+
+  t.M=m_transform.getMatrix();
+  t.MV=  m_cam.getView()*t.M;
+  t.MVP= m_cam.getProjection()*t.MV;
+  normalMatrix=t.MV;
+  t.normalMatrix.inverse().transpose();
+  shader->setUniformBuffer("TransformUBO",sizeof(transform),&t.MVP.m_00);
+
+//  shader->setUniform("MVP",MVP);
+//  shader->setUniform("normalMatrix",normalMatrix);
+//  shader->setUniform("M",M);
+//  shader->setUniform("MV",MV);
 
 }
 
@@ -597,7 +623,7 @@ void NGLScene::finalPass()
   shader->setUniform("uTexelOffset",0.0f,1.0f);
   shader->setUniform("colourSampler",2);
   glViewport(0, 0, m_win.width, m_win.height);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
   m_screenQuad->unbind();
   }
@@ -717,7 +743,7 @@ void NGLScene::paintGL()
     }
 
 
-
+  ++m_frames;
 }
   std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
   //ngl::msg->drawLine();
@@ -918,6 +944,15 @@ void NGLScene::timerEvent(QTimerEvent *_event)
     }
     }
   }
+  if(_event->timerId() == m_fpsTimer)
+     {
+       if( m_timer.elapsed() > 1000.0)
+       {
+         m_fps=m_frames;
+         m_frames=0;
+         m_timer.restart();
+       }
+      }
   update();
 }
 
@@ -934,9 +969,8 @@ void NGLScene::drawUI()
   ImGui::Text("Bloom Blur Pass %ld uS ", m_bloomBlurPassDuration);
   ImGui::Text("Final  Pass %ld uS ", m_finalPassDuration);
   ImGui::Text("Total Time %ld uS ", m_totalDuration);
-
+  ImGui::Text("FPS %ld", m_fps);
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
 
   ImGui::End();
 

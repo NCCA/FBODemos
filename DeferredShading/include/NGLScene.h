@@ -201,6 +201,10 @@ private:
     bool m_textureDebug=false;
     GLuint m_debugTextureID=1;
     bool m_showUI=true;
+    int m_fpsTimer;
+    int m_fps=0;
+    int m_frames=0;
+
 
 };
 

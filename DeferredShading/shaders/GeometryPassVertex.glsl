@@ -5,10 +5,19 @@ layout (location=1) in vec3 inNormal;
 layout (location=2) in vec2 inUV;
 
 
-uniform mat4 MV;
-uniform mat4 MVP;
-uniform mat3 normalMatrix;
-uniform mat4 M;
+//uniform mat4 MV;
+//uniform mat4 MVP;
+//uniform mat3 normalMatrix;
+//uniform mat4 M;
+
+layout( std140) uniform TransformUBO
+{
+  mat4 MVP;
+  mat4 normalMatrix;
+  mat4 M;
+  mat4 MV;
+}tx;
+
 
 /// create an interface block for ease
 out VertexData
@@ -22,10 +31,9 @@ out VertexData
 void main()
 {
 
-  vertexOut.fragPos = vec3(M * vec4(inVert,1.0));
-  vertexOut.fragVS  = vec3(MV* vec4(inVert,1.0));
-
+  vertexOut.fragPos = vec3(tx.M * vec4(inVert,1.0));
+  vertexOut.fragVS  = vec3(tx.MV* vec4(inVert,1.0));
   vertexOut.uv=inUV;
-  vertexOut.normal=normalMatrix*inNormal;
-  gl_Position = MVP*vec4(inVert,1.0);
+  vertexOut.normal=mat3(tx.normalMatrix)*inNormal;
+  gl_Position = tx.MVP*vec4(inVert,1.0);
 }
