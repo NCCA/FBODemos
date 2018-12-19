@@ -123,6 +123,7 @@ private:
     void timerEvent(QTimerEvent *) override;
 
     void createScreenQuad();
+    void createInitialTextureBindings();
     void editLightShader();
     void geometryPass();
     void lightingPass();
@@ -156,10 +157,9 @@ private:
 
     struct Light
     {
-        ngl::Vec3 position;
-        ngl::Vec3 colour;
-        float linear= 0.7f;
-        float quadratic=1.8f;
+        ngl::Vec4 position; // xyz only but packed to vec4 for UBO
+        ngl::Vec4 colour;   // rgb only but packed to vec4 for UBO
+        ngl::Vec4 atten;    // m_x == linear m_y == quadratic
     };
     int m_numLights=24;
     bool m_showLights=true;

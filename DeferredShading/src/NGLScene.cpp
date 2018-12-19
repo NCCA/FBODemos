@@ -277,9 +277,35 @@ void NGLScene::initializeGL()
   createSSAOKernel();
   TexturePack tp;
   tp.loadJSON("textures/textures.json");
+  createInitialTextureBindings();
   QtImGui::initialize(this);
 
+
+
+
 }
+
+void NGLScene::createInitialTextureBindings()
+{
+
+  int numTex;
+  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,&numTex);
+  ngl::msg->addMessage(fmt::format("Max Texture Image Units {0}",numTex));
+
+  // bind textures for FBO
+  auto shader= ngl::ShaderLib::instance();
+  shader->use(LightingPassShader);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("position"));
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, m_ssaoPass->getTextureID("ssao"));
+
+}
+
 
 
 void NGLScene::createSSAOKernel()
@@ -437,27 +463,16 @@ void NGLScene::lightingPass()
 
   glClear(/*L_COLOR_BUFFER_BIT |*/ GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_win.width,m_win.height);
-
-
-  int i=0;
-  for(auto l : m_lights)
-  {
-    shader->setUniform(fmt::format("lights[{0}].position",i),l.position);
-    shader->setUniform(fmt::format("lights[{0}].colour",i),l.colour);
-    shader->setUniform(fmt::format("lights[{0}].linear",i),l.linear);
-    shader->setUniform(fmt::format("lights[{0}].quadratic",i),l.quadratic);
-
-    ++i;
-  }
-  // bind textures for FBO
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("position"));
-  glActiveTexture(GL_TEXTURE1);
+//  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("position"));
+//  glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, m_ssaoPass->getTextureID("ssao"));
+
+  shader->setUniformBuffer("lightSources",sizeof(Light)*m_lights.size(),&m_lights[0].position.m_x);
   shader->setUniform("viewPos",m_cam.getEye());
   shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("useAO",bool(m_useAO));
@@ -804,8 +819,8 @@ void NGLScene::createLights()
     l.position.set(x,y,z);//=rng->getRandomVec3()*5.0f;
     l.colour=rng->getRandomColour3()*m_lightMaxIntensity;
     l.colour.clamp(1.0f,m_lightMaxIntensity);
-    l.linear=rng->randomPositiveNumber(0.5f)+0.2f;
-    l.quadratic=rng->randomNumber(1.0f)+1.0f;
+    l.atten.m_x=rng->randomPositiveNumber(0.5f)+0.2f;
+    l.atten.m_y=rng->randomNumber(1.0f)+1.0f;
     i+=circleStep;
   }
 }

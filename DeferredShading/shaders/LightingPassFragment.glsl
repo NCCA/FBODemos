@@ -11,11 +11,19 @@ uniform sampler2D ssaoSampler;
 uniform bool useAO;
 struct Light
 {
-    vec3 position;
-    vec3 colour;
-    float linear;
-    float quadratic;
+  vec4 position;
+  vec4 colour;
+  vec4 atten; //(x==linear y==quadratic)
 };
+//const int NR_LIGHTS = @numLights;
+layout(std140) uniform lightSources
+{
+  Light lights[@numLights];
+}ls;
+
+//uniform Light lights[@numLights];
+uniform vec3 viewPos;
+uniform vec2 screenResolution;
 
 
 const float PI = 3.14159265359;
@@ -64,10 +72,6 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 
 
 
-//const int NR_LIGHTS = @numLights;
-uniform Light lights[@numLights];
-uniform vec3 viewPos;
-uniform vec2 screenResolution;
 
 void main()
 {
@@ -97,12 +101,12 @@ void main()
   {
 
     // calculate per-light radiance
-    vec3 L = normalize(lights[i].position - WorldPos);
+    vec3 L = normalize(ls.lights[i].position.xyz - WorldPos);
     vec3 H = normalize(V + L);
-    float distance = length(lights[i].position - WorldPos);
-    float attenuation = 1.0 / (1.0 + lights[i].linear * distance + lights[i].quadratic * distance * distance);
+    float distance = length(ls.lights[i].position.xyz - WorldPos);
+    float attenuation = 1.0 / (1.0 + ls.lights[i].atten.x * distance + ls.lights[i].atten.y * distance * distance);
 
-    vec3 radiance = lights[i].colour * attenuation;
+    vec3 radiance = ls.lights[i].colour.rgb * attenuation;
 
     // Cook-Torrance BRDF
     float NDF = DistributionGGX(N, H, roughness);

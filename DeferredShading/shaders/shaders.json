@@ -176,7 +176,7 @@
 
           }
         ],
-          "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+          "Uniforms" : [{"name" : "dof.drSR", "type" : "vec4", "value" :"0.1 50.0 1024 720"} ]
 
        },
 
@@ -203,7 +203,6 @@
            {"name" : "positionSampler", "type" : "int", "value" :"0"} ,
            {"name" : "normalSampler", "type" : "int", "value" :"1"} ,
            {"name" : "albedoMetallicSampler", "type" : "int", "value" :"2"} ,
-           {"name" : "aoSampler", "type" : "int", "value" :"3"},
            {"name" : "ssaoSampler", "type" : "int", "value" :"4"}
          ]
    }
