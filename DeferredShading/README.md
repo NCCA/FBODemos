@@ -1,5 +1,17 @@
 # Deferred Renderer
 
+This is the speedup branch, rough speeds for unoptimised version is
+|-------|-----|
+|Geo pass |1870|
+|SSAO |50|
+|Lighting |160
+|Forward |170|
+|Bloom Blur |123|
+|Final |80|
+|Total |126800|
+|135.2 |  7.4 FPS|
+
+
 Pass 1 collect Position normal and albedoSpec
 Pass 2 Lighting Pass write to m_lightingFBO fragColour (from lighting) and brightness
 Pass 3 copy this to FBO for forward render of lights

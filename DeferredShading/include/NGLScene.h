@@ -78,7 +78,7 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief method to load transform matrices to the shader
     //----------------------------------------------------------------------------------------------------------------------
-    void loadMatricesToShader(const ngl::Mat4 &_mouse);
+    void loadMatricesToShader();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our texture id used by the FBO
     //----------------------------------------------------------------------------------------------------------------------
@@ -123,7 +123,9 @@ private:
     void timerEvent(QTimerEvent *) override;
 
     void createScreenQuad();
-    void createInitialTextureBindings();
+    void createTransformTBO();
+    void updateTransformTBO();
+
     void editLightShader();
     void geometryPass();
     void lightingPass();
@@ -146,6 +148,7 @@ private:
     std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
     GLuint m_floorNormalTexture;
     GLuint m_noiseTexture=0;
+    GLuint m_txBuffer;
     bool m_debugOn=false;
     int m_debugAttachment=0;
     void createLights();
@@ -154,6 +157,7 @@ private:
     float m_focalLenght=1.0f;
     float m_focalDistance=8.0f;
     float m_focusDistance=0.55f;
+    GLuint m_teapotTransformTBO;
 
     struct Light
     {

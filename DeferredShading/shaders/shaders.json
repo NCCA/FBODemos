@@ -30,7 +30,7 @@
       {
         "type": "Vertex",
         "name": "GeometryPassCheckVertex",
-        "path" : ["shaders/GeometryPassVertex.glsl"]
+        "path" : ["shaders/CheckGeoPassVertex.glsl"]
       },
       {
         "type": "Fragment",

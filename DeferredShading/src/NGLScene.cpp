@@ -9,6 +9,7 @@
 #include <ngl/Random.h>
 #include <ngl/VAOFactory.h>
 #include <ngl/Texture.h>
+#include <ngl/NGLStream.h>
 #include "ScopedBind.h"
 #include "TexturePack.h"
 #include "imgui.h"
@@ -275,39 +276,95 @@ void NGLScene::initializeGL()
   createLights();
   m_randomUpdateTimer=startTimer(400);
   createSSAOKernel();
+  createTransformTBO();
+
   TexturePack tp;
   tp.loadJSON("textures/textures.json");
-  createInitialTextureBindings();
   QtImGui::initialize(this);
 
-
-
-
 }
 
-void NGLScene::createInitialTextureBindings()
+
+void NGLScene::updateTransformTBO()
 {
+  ngl::Transformation tx;
+  struct transform
+    {
+      ngl::Mat4 MVP;
+      ngl::Mat4 normalMatrix;
+      ngl::Mat4 M;
+      ngl::Mat4 MV;
+    };
+  transform t;
+  std::vector<transform> transformBuffer;
+  tx.reset();
+  static float s_rot=0.1f;
+  static float range=14.0f;
+  for (float z=-range; z<range; z+=1.8f)
+  {
+    for(float x=-range; x<range; x+=1.8f)
+    {
+      tx.setRotation(0,s_rot,0);
+      tx.setPosition(x,0.0f,z);
+      t.M=tx.getMatrix();
+      t.MV=  m_cam.getView()*t.M;
+      t.MVP= m_cam.getProjection()*t.MV;
+      t.normalMatrix=t.MV;
+      t.normalMatrix.inverse().transpose();
+      transformBuffer.push_back(t);
+    }
+  }
+  s_rot+=0.5f;
+  glBindBuffer(GL_TEXTURE_BUFFER, m_txBuffer);
+  GLsizeiptr size=transformBuffer.size()*sizeof(transform);
+  glBufferData(GL_TEXTURE_BUFFER, size, &transformBuffer[0].MVP.m_openGL[0], GL_STATIC_DRAW);
 
-  int numTex;
-  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,&numTex);
-  ngl::msg->addMessage(fmt::format("Max Texture Image Units {0}",numTex));
-
-  // bind textures for FBO
-  auto shader= ngl::ShaderLib::instance();
-  shader->use(LightingPassShader);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("position"));
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, m_ssaoPass->getTextureID("ssao"));
 
 }
+void NGLScene::createTransformTBO()
+{
+  ngl::Transformation tx;
+  struct transform
+    {
+      ngl::Mat4 MVP;
+      ngl::Mat4 normalMatrix;
+      ngl::Mat4 M;
+      ngl::Mat4 MV;
+    };
+  transform t;
+  std::vector<transform> transformBuffer;
+  tx.reset();
+  static float s_rot=0.1f;
+  static float range=14.0f;
+  for (float z=-range; z<range; z+=1.8f)
+  {
+    for(float x=-range; x<range; x+=1.8f)
+    {
+      tx.setRotation(0,s_rot,0);
+      tx.setPosition(x,0.0f,z);
+      t.M=tx.getMatrix();
+      t.MV=  m_cam.getView()*t.M;
+      t.MVP= m_cam.getProjection()*t.MV;
+      t.normalMatrix=t.MV;
+      t.normalMatrix.inverse().transpose();
+      transformBuffer.push_back(t);
+    }
+  }
 
 
+    glGenBuffers(1,&m_txBuffer);
+    glBindBuffer(GL_TEXTURE_BUFFER, m_txBuffer);
+    GLsizeiptr size=transformBuffer.size()*sizeof(transform);
+    glBufferData(GL_TEXTURE_BUFFER, size, &transformBuffer[0].MVP.m_openGL[0], GL_STATIC_DRAW);
 
+
+    glGenTextures(1, &m_teapotTransformTBO);
+    glActiveTexture( GL_TEXTURE5 );
+    glBindTexture(GL_TEXTURE_BUFFER,m_teapotTransformTBO);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_txBuffer);
+   // glBindBuffer(GL_TEXTURE_BUFFER,0);
+
+}
 void NGLScene::createSSAOKernel()
 {
   auto rng=ngl::Random::instance();
@@ -375,14 +432,9 @@ void NGLScene::loadDOFUniforms()
 
 }
 
-void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
+void NGLScene::loadMatricesToShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-
-  ngl::Mat4 MV;
-  ngl::Mat4  MVP;
-  ngl::Mat3 normalMatrix;
-  ngl::Mat4 M;
 
   struct transform
   {
@@ -396,14 +448,10 @@ void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
   t.M=m_transform.getMatrix();
   t.MV=  m_cam.getView()*t.M;
   t.MVP= m_cam.getProjection()*t.MV;
-  normalMatrix=t.MV;
+  t.normalMatrix=t.MV;
   t.normalMatrix.inverse().transpose();
   shader->setUniformBuffer("TransformUBO",sizeof(transform),&t.MVP.m_00);
 
-//  shader->setUniform("MVP",MVP);
-//  shader->setUniform("normalMatrix",normalMatrix);
-//  shader->setUniform("M",M);
-//  shader->setUniform("MV",MV);
 
 }
 
@@ -426,32 +474,34 @@ void NGLScene::geometryPass()
     };
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   shader->use(GeometryPassShader);
-  // if we want a different camera we wouldset this here
-  // rotate the teapot
-  m_transform.reset();
-  static float s_rot=0.1f;
-  for (float z=-14.0f; z<14.0f; z+=1.8f)
-  {
-    for(float x=-14.0f; x<14.0f; x+=1.8f)
-    {
-      tp.activateTexturePack(textures[static_cast<int>(rng->randomPositiveNumber(5))]);
 
-      m_transform.setRotation(0,s_rot,0);
-      m_transform.setPosition(x,0.0f,z);
-      loadMatricesToShader(m_mouseGlobalTX);
-      prim->draw("teapot");
-    }
-  }
+  shader->setUniform("TBO",6);
+
+  auto bufferID=prim->getVAOFromName("teapot")->getID();
+  ngl::msg->addWarning(fmt::format("BufferID {0}",bufferID));
+  int size=prim->getVAOFromName("teapot")->numIndices();
+  glBindVertexArray(bufferID);
+  updateTransformTBO();
+  glActiveTexture(GL_TEXTURE6);
+  glBindTexture(GL_TEXTURE_BUFFER, m_teapotTransformTBO);
+  static float s_rot=0.1f;
+
+  tp.activateTexturePack(textures[3]);//static_cast<int>(rng->randomPositiveNumber(5))]);
+  glDrawArraysInstanced(GL_TRIANGLES,0,size,256);
+  glBindTexture(GL_TEXTURE_BUFFER, 0);
+  glBindVertexArray(0);
   s_rot+=1.0f;
+  glBindTexture(GL_TEXTURE_BUFFER, 0);
+
   shader->use(GeometryPassCheckerShader);
   shader->setUniform("normalMapSampler",0);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D,m_floorNormalTexture);
-
   m_transform.reset();
   m_transform.setPosition(0.0f,-0.45f,0.0f);
-  loadMatricesToShader(m_mouseGlobalTX);
+  loadMatricesToShader();
   prim->draw("floor");
+
 }
 
 void NGLScene::lightingPass()
