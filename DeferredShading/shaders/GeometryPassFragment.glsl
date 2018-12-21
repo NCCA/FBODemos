@@ -12,17 +12,18 @@ in VertexData
   vec2 uv;
   vec3 normal;
   vec3 fragVS;
+  float texID;
 }vertexIn;
 
 
-uniform sampler2D albedoSampler;
-uniform sampler2D metallicSampler;
-uniform sampler2D roughnessSampler;
-uniform sampler2D normalMapSampler;
+uniform sampler2DArray albedoSampler;
+uniform sampler2DArray metallicSampler;
+uniform sampler2DArray roughnessSampler;
+uniform sampler2DArray normalMapSampler;
 
-vec3 getNormalFromMap(in vec3 WorldPos,in vec3 Normal,in vec2 uv)
+vec3 getNormalFromMap(in vec3 WorldPos,in vec3 Normal,in vec2 uv,in float layer)
 {
-    vec3 tangentNormal = texture(normalMapSampler, uv).xyz * 2.0 - 1.0;
+    vec3 tangentNormal = texture(normalMapSampler, vec3(uv,layer)).xyz * 2.0 - 1.0;
 
     vec3 Q1  = dFdx(WorldPos);
     vec3 Q2  = dFdy(WorldPos);
@@ -42,13 +43,13 @@ vec3 getNormalFromMap(in vec3 WorldPos,in vec3 Normal,in vec2 uv)
 
 void main()
 {
-
+  float layer=vertexIn.texID;
   // store the fragment position vector in the first gbuffer texture
   position = vertexIn.fragPos;
   positionVS=vertexIn.fragVS;
-  normal.rgb = getNormalFromMap(vertexIn.fragPos,vertexIn.normal,vertexIn.uv);
-  normal.a=texture(roughnessSampler,  vertexIn.uv).r;
-  albedoMetallic.rgb = texture(albedoSampler, vertexIn.uv).rgb;
-  albedoMetallic.a = texture(metallicSampler,  vertexIn.uv).r;
+  normal.rgb = getNormalFromMap(vertexIn.fragPos,vertexIn.normal,vertexIn.uv,layer);
+  normal.a=texture(roughnessSampler,  vec3(vertexIn.uv,layer)).r;
+  albedoMetallic.rgb = texture(albedoSampler, vec3(vertexIn.uv,layer)).rgb;
+  albedoMetallic.a = texture(metallicSampler,  vec3(vertexIn.uv,layer)).r;
 
 }

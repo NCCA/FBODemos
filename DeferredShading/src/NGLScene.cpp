@@ -15,15 +15,12 @@
 #include "imgui.h"
 #include "QtImGui.h"
 #include "ImGuizmo.h"
-
+#include "TextureArray.h"
 NGLScene::NGLScene()
 {
   setTitle("Deferred Render");
   m_lights.resize(m_numLights);
   m_timer.start();
-  m_fpsTimer =startTimer(0);
-  m_fps=0;
-  m_frames=0;
 
 }
 
@@ -278,11 +275,30 @@ void NGLScene::initializeGL()
   createSSAOKernel();
   createTransformTBO();
 
+/*
   TexturePack tp;
   tp.loadJSON("textures/textures.json");
+  */
   QtImGui::initialize(this);
+  std::vector<std::string> albedoTextures={"textures/arrayTextures/copperAlbedo.png", "textures/arrayTextures/rustyAlbedo.png",
+                                   "textures/arrayTextures/greasyAlbedo.png", "textures/arrayTextures/woodAlbedo.png",
+                                   "textures/arrayTextures/panelAlbedo.png"};
+  TextureArray albedo("albedo",albedoTextures,2048,2048);
+  std::vector<std::string> normalTextures={"textures/arrayTextures/copperNormal.png", "textures/arrayTextures/rustyNormal.png",
+                                           "textures/arrayTextures/greasyNormal.png", "textures/arrayTextures/woodNormal.png",
+                                           "textures/arrayTextures/panelNormal.png"};
+  TextureArray normal("normal",normalTextures,2048,2048);
+
+  std::vector<std::string> metallicTextures={"textures/arrayTextures/copperMetallic.png","textures/arrayTextures/rustyMetallic.png",
+  "textures/arrayTextures/greasyMetallic.png","textures/arrayTextures/woodMetallic.png","textures/arrayTextures/panelMetallic.png"};
+  TextureArray metallic("metallic",metallicTextures,2048,2048);
+  std::vector<std::string> roughnessTextures={
+  "textures/arrayTextures/copperRoughness.png","textures/arrayTextures/rustyRoughness.png","textures/arrayTextures/greasyRoughness.png",
+  "textures/arrayTextures/woodRoughness.png","textures/arrayTextures/panelRoughness.png",};
+  TextureArray roughness("roughness",roughnessTextures,2048,2048);
 
 }
+
 
 
 void NGLScene::updateTransformTBO()
@@ -300,6 +316,7 @@ void NGLScene::updateTransformTBO()
   tx.reset();
   static float s_rot=0.1f;
   static float range=14.0f;
+  size_t index=0;
   for (float z=-range; z<range; z+=1.8f)
   {
     for(float x=-range; x<range; x+=1.8f)
@@ -311,6 +328,7 @@ void NGLScene::updateTransformTBO()
       t.MVP= m_cam.getProjection()*t.MV;
       t.normalMatrix=t.MV;
       t.normalMatrix.inverse().transpose();
+      t.normalMatrix.m_33=m_randTextureID[index++];
       transformBuffer.push_back(t);
     }
   }
@@ -336,10 +354,13 @@ void NGLScene::createTransformTBO()
   tx.reset();
   static float s_rot=0.1f;
   static float range=14.0f;
+  auto rng=ngl::Random::instance();
   for (float z=-range; z<range; z+=1.8f)
   {
     for(float x=-range; x<range; x+=1.8f)
     {
+      GLuint txID=static_cast<GLuint>(rng->randomPositiveNumber(5));
+      m_randTextureID.push_back(txID);
       tx.setRotation(0,s_rot,0);
       tx.setPosition(x,0.0f,z);
       t.M=tx.getMatrix();
@@ -347,6 +368,8 @@ void NGLScene::createTransformTBO()
       t.MVP= m_cam.getProjection()*t.MV;
       t.normalMatrix=t.MV;
       t.normalMatrix.inverse().transpose();
+      // encode textureID in normal matrix as we have space
+      t.normalMatrix.m_33=txID;
       transformBuffer.push_back(t);
     }
   }
@@ -461,24 +484,10 @@ void NGLScene::geometryPass()
   auto *shader=ngl::ShaderLib::instance();
   ScopedBind<FrameBufferObject> t(m_renderFBO.get());
   m_renderFBO->setViewport();
-  ngl::Random *rng=ngl::Random::instance();
-  ngl::Random::instance()->setSeed(1235);
-  TexturePack tp;
-    static  std::string textures[]=
-    {
-      "copper",
-      "greasy",
-      "panel",
-      "rusty",
-      "wood"
-    };
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   shader->use(GeometryPassShader);
-
   shader->setUniform("TBO",6);
-
   auto bufferID=prim->getVAOFromName("teapot")->getID();
-  ngl::msg->addWarning(fmt::format("BufferID {0}",bufferID));
   int size=prim->getVAOFromName("teapot")->numIndices();
   glBindVertexArray(bufferID);
   updateTransformTBO();
@@ -486,7 +495,15 @@ void NGLScene::geometryPass()
   glBindTexture(GL_TEXTURE_BUFFER, m_teapotTransformTBO);
   static float s_rot=0.1f;
 
-  tp.activateTexturePack(textures[3]);//static_cast<int>(rng->randomPositiveNumber(5))]);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_ARRAY,TextureArray::getID("albedo") );
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D_ARRAY,TextureArray::getID("metallic") );
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D_ARRAY,TextureArray::getID("roughness") );
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D_ARRAY,TextureArray::getID("normal") );
+
   glDrawArraysInstanced(GL_TRIANGLES,0,size,256);
   glBindTexture(GL_TEXTURE_BUFFER, 0);
   glBindVertexArray(0);
@@ -514,8 +531,6 @@ void NGLScene::lightingPass()
   glClear(/*L_COLOR_BUFFER_BIT |*/ GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_win.width,m_win.height);
   glActiveTexture(GL_TEXTURE0);
-//  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("position"));
-//  glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
@@ -561,7 +576,7 @@ void NGLScene::forwardPass()
   {
     m_transform.setPosition(l.position);
     shader->setUniform("colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
-    ngl::Mat4 MVP =m_cam.getVP()* m_mouseGlobalTX*m_transform.getMatrix();
+    ngl::Mat4 MVP =m_cam.getVP()*m_transform.getMatrix();
     shader->setUniform("MVP",MVP);
     ngl::VAOPrimitives::instance()->draw("sphere");
   }
@@ -808,7 +823,6 @@ void NGLScene::paintGL()
     }
 
 
-  ++m_frames;
 }
   std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
   //ngl::msg->drawLine();
@@ -1009,15 +1023,7 @@ void NGLScene::timerEvent(QTimerEvent *_event)
     }
     }
   }
-  if(_event->timerId() == m_fpsTimer)
-     {
-       if( m_timer.elapsed() > 1000.0)
-       {
-         m_fps=m_frames;
-         m_frames=0;
-         m_timer.restart();
-       }
-      }
+
   update();
 }
 
@@ -1034,7 +1040,6 @@ void NGLScene::drawUI()
   ImGui::Text("Bloom Blur Pass %ld uS ", m_bloomBlurPassDuration);
   ImGui::Text("Final  Pass %ld uS ", m_finalPassDuration);
   ImGui::Text("Total Time %ld uS ", m_totalDuration);
-  ImGui::Text("FPS %ld", m_fps);
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   ImGui::End();

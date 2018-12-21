@@ -20,6 +20,7 @@ SOURCES+= $$PWD/src/NGLScene.cpp    \
           $$PWD/src/FrameBufferObject.cpp \
           $$PWD/src/TexturePack.cpp \
           $$PWD/src/FirstPersonCamera.cpp \
+          $$PWD/src/TextureArray.cpp \
           $$PWD/imgui/src/*.cpp \
           $$PWD/src/main.cpp
 # same for the .h files
@@ -27,6 +28,7 @@ HEADERS+= $$PWD/include/NGLScene.h \
           $$PWD/include/FrameBufferObject.h \
           $$PWD/include/FirstPersonCamera.h \
           $$PWD/include/TextureTypes.h \
+          $$PWD/include/TextureArray.h \
           $$PWD/include/TexturePack.h \
           $$PWD/include/ScopedBind.h \
           $$PWD/include/WindowParams.h \
