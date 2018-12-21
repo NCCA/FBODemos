@@ -708,8 +708,7 @@ void NGLScene::paintGL()
       //ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
-    if(  m_showUI==true)
-      drawUI();
+
 
     if(m_textureDebug==true)
     {
@@ -724,6 +723,8 @@ void NGLScene::paintGL()
   //ngl::msg->addMessage(fmt::format("Total Rendertime {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count()));
   //ngl::msg->drawLine();
   m_totalDuration=std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count();
+  if(  m_showUI==true)
+    drawUI();
 }
 
 void NGLScene::createScreenQuad()
