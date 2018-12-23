@@ -87,7 +87,7 @@ void NGLScene::initializeGL()
   }
 
   ngl::VAOPrimitives::instance()->createTrianglePlane("floor",30,30,10,10,ngl::Vec3::up());
-  ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,20);
+  ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,8);
   ngl::msg->addMessage("Creating m_renderFBO");
   FrameBufferObject::setDefaultFBO(defaultFramebufferObject());
   m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
@@ -337,6 +337,31 @@ void NGLScene::updateTransformTBO()
   GLsizeiptr size=transformBuffer.size()*sizeof(transform);
   glBufferData(GL_TEXTURE_BUFFER, size, &transformBuffer[0].MVP.m_openGL[0], GL_STATIC_DRAW);
 
+  // Now for lights
+
+  struct lightTBO
+  {
+      ngl::Mat4 MVP;
+      ngl::Vec4 colour;
+  };
+  std::vector<lightTBO> lightTx;
+  tx.reset();
+  tx.setScale(0.05f,0.05f,0.05f);
+  lightTBO light;
+  for(auto l : m_lights)
+  {
+    tx.setPosition(l.position);
+    light.MVP=m_cam.getVP()*tx.getMatrix();
+    light.colour=l.colour;
+    lightTx.push_back(light);
+  }
+
+
+  glBindBuffer(GL_TEXTURE_BUFFER, m_lightTxBuffer);
+  size=m_lights.size()*sizeof(lightTBO);
+  glBufferData(GL_TEXTURE_BUFFER, size, &lightTx[0].MVP.m_openGL[0], GL_STATIC_DRAW);
+
+  glBindBuffer(GL_TEXTURE_BUFFER,0);
 
 }
 void NGLScene::createTransformTBO()
@@ -385,7 +410,40 @@ void NGLScene::createTransformTBO()
     glActiveTexture( GL_TEXTURE5 );
     glBindTexture(GL_TEXTURE_BUFFER,m_teapotTransformTBO);
     glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_txBuffer);
-   // glBindBuffer(GL_TEXTURE_BUFFER,0);
+
+    // Now for lights
+    struct lightTBO
+    {
+        ngl::Mat4 MVP;
+        ngl::Vec4 colour;
+    };
+
+    std::vector<lightTBO> lightTx;
+    tx.reset();
+    lightTBO light;
+    for(auto l : m_lights)
+    {
+      tx.setPosition(l.position);
+      light.MVP=m_cam.getVP()*tx.getMatrix();
+      light.colour=l.colour;
+      lightTx.push_back(light);
+    }
+
+
+    glGenBuffers(1,&m_lightTxBuffer);
+    glBindBuffer(GL_TEXTURE_BUFFER, m_lightTxBuffer);
+    size=m_lights.size()*sizeof(lightTBO);
+    std::cout<<"Light buffer size "<<size<<'\n';
+    glBufferData(GL_TEXTURE_BUFFER, size, &lightTx[0].MVP.m_openGL[0], GL_STATIC_DRAW);
+
+    glGenTextures(1, &m_lightTransformTBO);
+    glActiveTexture( GL_TEXTURE5 );
+    glBindTexture(GL_TEXTURE_BUFFER,m_lightTransformTBO);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_lightTxBuffer);
+
+
+
+
 
 }
 void NGLScene::createSSAOKernel()
@@ -418,13 +476,13 @@ void NGLScene::createSSAOKernel()
 
   auto *shader=ngl::ShaderLib::instance();
   shader->use(SSAOPassShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   // Send kernel + rotation
   for (unsigned int i = 0; i < 64; ++i)
     shader->setUniform(fmt::format("samples[{0}]",i),m_ssaoKernel[i]);
   shader->use(SSAOBlurShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
 }
 
@@ -539,7 +597,7 @@ void NGLScene::lightingPass()
 
   shader->setUniformBuffer("lightSources",sizeof(Light)*m_lights.size(),&m_lights[0].position.m_x);
   shader->setUniform("viewPos",m_cam.getEye());
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+//  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("useAO",bool(m_useAO));
   m_screenQuad->bind();
   m_screenQuad->draw();
@@ -568,18 +626,26 @@ void NGLScene::forwardPass()
   GLuint attachmentsLighting[2] = { GL_COLOR_ATTACHMENT0 ,GL_COLOR_ATTACHMENT1};
   glDrawBuffers(2, attachmentsLighting);
 
-  //glClear(  GL_DEPTH_BUFFER_BIT);
   shader->use(ColourShader);
-  m_transform.setScale(0.05f,0.05f,0.05f);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-  for(auto l : m_lights)
-  {
-    m_transform.setPosition(l.position);
-    shader->setUniform("colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
-    ngl::Mat4 MVP =m_cam.getVP()*m_transform.getMatrix();
-    shader->setUniform("MVP",MVP);
-    ngl::VAOPrimitives::instance()->draw("sphere");
-  }
+  shader->setUniform("TBO",0);
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+//  for(auto l : m_lights)
+//  {
+//    m_transform.setPosition(l.position);
+//    shader->setUniform("colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
+//    ngl::Mat4 MVP =m_cam.getVP()*m_transform.getMatrix();
+//    shader->setUniform("MVP",MVP);
+//    ngl::VAOPrimitives::instance()->draw("sphere");
+//  }
+  auto *prim=ngl::VAOPrimitives::instance();
+  auto bufferID=prim->getVAOFromName("sphere")->getID();
+  int size=prim->getVAOFromName("sphere")->numIndices();
+  glBindVertexArray(bufferID);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_BUFFER, m_lightTransformTBO);
+  glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,size,m_lights.size());
+  glBindTexture(GL_TEXTURE_BUFFER, 0);
+  glBindVertexArray(0);
   m_forwardPass->unbind();
 
 }
@@ -587,21 +653,19 @@ void NGLScene::forwardPass()
 void NGLScene::bloomBlurPass()
 {
   auto *shader=ngl::ShaderLib::instance();
-  size_t amount = 10;
   shader->use(BloomPassShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   m_screenQuad->bind();
   m_pingPongBuffer[0]->setViewport();
-//  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   bool firstTime=true;
   bool horizontal=true;
-  for (size_t i = 0; i < amount; i++)
+  for (size_t i = 0; i < m_bloomBlurAmmount; i++)
   {
     m_pingPongBuffer[horizontal]->bind();
     shader->setUniform("horizontal", bool(horizontal));
-    shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+    //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,
                   firstTime ? m_forwardPass->getTextureID("brightness") :
@@ -610,10 +674,11 @@ void NGLScene::bloomBlurPass()
 
       firstTime=false;
       m_screenQuad->draw();
+
       m_pingPongBuffer[horizontal]->unbind();
       horizontal^=true;//!horizontal;
   }
-  m_screenQuad->unbind();
+   m_screenQuad->unbind();
 
 }
 
@@ -621,7 +686,7 @@ void NGLScene::ssaoPass()
 {
   auto *shader=ngl::ShaderLib::instance();
   shader->use(SSAOPassShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("positionSampler",0);
   shader->setUniform("normalSampler",1);
   shader->setUniform("texNoise",2);
@@ -637,15 +702,13 @@ void NGLScene::ssaoPass()
   m_screenQuad->bind();
   m_ssaoPass->setViewport();
   m_screenQuad->draw();
-  //glClear(GL_COLOR_BUFFER_BIT );
   shader->use(SSAOBlurShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("ssaoInput",0);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_ssaoPass->getTextureID("ssao"));
   m_screenQuad->draw();
   m_screenQuad->unbind();
- // glEnable(GL_DEPTH_TEST);
 
 }
 
@@ -657,8 +720,7 @@ void NGLScene::finalPass()
   m_dofTarget->bind();
   m_screenQuad->bind();
 
-//  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(/*GL_COLOR_BUFFER_BIT |*/ GL_DEPTH_BUFFER_BIT);
   shader->use(BloomPassFinalShader);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_forwardPass->getTextureID("fragColour"));
@@ -669,7 +731,7 @@ void NGLScene::finalPass()
   shader->setUniform("gamma",m_gamma);
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
   m_dofTarget->unbind();
 
@@ -694,6 +756,8 @@ void NGLScene::finalPass()
   shader->setUniform("depthSampler",1);
   shader->setUniform("uTexelOffset",1.0f,0.0f);
   m_screenQuad->draw();
+  glDrawArrays(GL_POINTS, 0, 1);
+
   m_dofPass->unbind();
 
 
@@ -704,6 +768,7 @@ void NGLScene::finalPass()
   shader->setUniform("colourSampler",2);
   glViewport(0, 0, m_win.width, m_win.height);
   //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+
   m_screenQuad->draw();
   m_screenQuad->unbind();
   }
@@ -711,7 +776,6 @@ void NGLScene::finalPass()
   {
     debugBlit(m_dofTarget->getTextureID("fragColour"));
   }
-  // debugBlit(m_dofPass->getTextureID("blurTarget"));
 }
 
 
@@ -774,6 +838,7 @@ void NGLScene::paintGL()
   }
   else // do deferred render
   {
+    m_screenQuad->bind();
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       ssaoPass();
@@ -814,31 +879,31 @@ void NGLScene::paintGL()
       //ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
-    if(  m_showUI==true)
-      drawUI();
 
     if(m_textureDebug==true)
     {
+      setTitle(fmt::format("Debug Texture id {0}",m_debugTextureID).c_str());
       debugBlit(m_debugTextureID);
     }
 
 
 }
   std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
-  //ngl::msg->drawLine();
-  //ngl::msg->addMessage(fmt::format("Total Rendertime {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count()));
-  //ngl::msg->drawLine();
   m_totalDuration=std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count();
+  if(  m_showUI==true)
+    drawUI();
+
 }
 
 void NGLScene::createScreenQuad()
 {
-  m_screenQuad=ngl::VAOFactory::createVAO(ngl::simpleVAO,GL_TRIANGLES);
+  m_screenQuad=ngl::VAOFactory::createVAO(ngl::simpleVAO,GL_POINTS);
   m_screenQuad->bind();
 
-  std::array<GLfloat,12> quad ={{-1.0f,1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,1.0f,1.0f,-1.0f,1.0f, 1.0f}};
+ // std::array<GLfloat,12> quad ={{-1.0f,1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,1.0f,1.0f,-1.0f,1.0f, 1.0f}};
+  std::array<GLfloat,2> quad={{0,0}};
   m_screenQuad->setData(ngl::AbstractVAO::VertexData(quad.size()*sizeof(GLfloat),quad[0]));
-  m_screenQuad->setVertexAttributePointer(0,2,GL_FLOAT,0,0);
+   m_screenQuad->setVertexAttributePointer(0,2,GL_FLOAT,0,0);
   m_screenQuad->setNumIndices(quad.size());
   m_screenQuad->unbind();
 
@@ -847,7 +912,7 @@ void NGLScene::createScreenQuad()
 void NGLScene::editLightShader()
 {
   auto *shader=ngl::ShaderLib::instance();
-  m_numLights=std::min(m_numLights, std::max(1, 64));
+  m_numLights=std::min(m_numLights, std::max(1, 400));
 
   auto editString=fmt::format("{0}",m_numLights);
   shader->editShader(LightingPassFragment,"@numLights",editString);
@@ -861,7 +926,7 @@ void NGLScene::editLightShader()
   shader->setUniform("albedoMetallicSampler",2);
   //shader->setUniform("aoSampler",3);
   shader->setUniform("ssaoSampler",4);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   createLights();
   setTitle(QString("Deferred Renderer %0 Lights").arg(m_numLights));
 }
@@ -971,10 +1036,10 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
 
 void NGLScene::debugBlit(GLuint _id)
 {
-//  glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+  glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
   auto shader=ngl::ShaderLib::instance();
   shader->use(DebugShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("image",0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_win.width,m_win.height);
@@ -982,6 +1047,7 @@ void NGLScene::debugBlit(GLuint _id)
   glBindTexture(GL_TEXTURE_2D,_id);
   m_screenQuad->bind();
   m_screenQuad->draw();
+
   m_screenQuad->unbind();
 }
 
@@ -1055,6 +1121,8 @@ void NGLScene::drawUI()
   ImGui::Separator();
   ImGui::Checkbox("Use AO", &m_useAO);
   ImGui::Checkbox("Use Bloom", &m_useBloom);
+  ImGui::SliderInt("Bloom Blur Level", &m_bloomBlurAmmount,0,40);
+
   ImGui::Separator();
   ImGui::SliderFloat("Exposure", &m_exposure,0.0f,5.0f);
   ImGui::SliderFloat("Gamma", &m_gamma,0.1f,4.0f);
@@ -1062,7 +1130,7 @@ void NGLScene::drawUI()
   ImGui::End();
 
   ImGui::Begin("Lights");
-  if (ImGui::SliderInt("Number of Lights", &m_numLights,1,64) )
+  if (ImGui::SliderInt("Number of Lights", &m_numLights,1,400) )
     editLightShader();
   ImGui::SliderFloat("Light intensity max", &m_lightMaxIntensity,1.0f,200.0f);
   ImGui::Separator();
@@ -1091,7 +1159,6 @@ void NGLScene::drawUI()
 
   }
   ImGui::End();
-
   ImGui::Render();
 
 }

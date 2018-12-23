@@ -11,13 +11,14 @@ int kernelSize = 64;
 float radius = 0.5;
 float bias = 0.025;
 uniform vec2 screenResolution;
+in vec2 uv;
 uniform mat4 projection;
 
 
 void main()
 {
   vec2 noiseScale = vec2(screenResolution.x/4.0, screenResolution.y/4.0);
-  vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
+  //vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
   // get input for SSAO algorithm
   vec3 fragPos = texture(positionSampler, uv).xyz;
   vec3 normal = normalize(texture(normalSampler, uv).rgb);

@@ -1,7 +1,9 @@
 #version 330 core
 layout (location=0) out vec4 fragColour;
 layout (location=1) out vec4 brightness;
-uniform vec4 colour;
+//uniform vec4 colour;
+in vec4 colour;
+
 uniform vec2 screenResolution;
 void main()
 {

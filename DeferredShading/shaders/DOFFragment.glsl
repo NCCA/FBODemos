@@ -15,7 +15,7 @@ uniform vec2 uTexelOffset;
 uniform sampler2D colourSampler;
 uniform sampler2D depthSampler;
 layout (location=0)out vec4 fragColor;
-
+in vec2 uv;
 void main()
 {
   float focusDistance=dof.fbPPM[0];

@@ -50,12 +50,16 @@
       "name": "BloomPassShader",
        "debug" : false,
     "Shaders"  : [
-      {
-        "type": "Vertex",
-        "name": "BloomPassCheckVertex",
-        "path" : ["shaders/LightingPassVertex.glsl"]
-      },
-      {
+            {
+                "type": "Vertex",
+                "name": "DebugVertex",
+                "path" : ["shaders/ScreenQuadVertex.glsl"]
+            },
+            {
+                "type": "Geometry",
+                "name": "DebugGeo",
+                "path" : ["shaders/ScreenQuadGeo.glsl"]
+            },      {
         "type": "Fragment",
         "name": "BloomPassFragment",
         "path" : ["shaders/BloomFragment.glsl"]
@@ -68,11 +72,17 @@
       "name": "SSAOPassShader",
        "debug" : false,
     "Shaders"  : [
-      {
-        "type": "Vertex",
-        "name": "SSAOPassVertex",
-        "path" : ["shaders/LightingPassVertex.glsl"]
-      },
+        {
+            "type": "Vertex",
+            "name": "DebugVertex",
+            "path" : ["shaders/ScreenQuadVertex.glsl"]
+        },
+        {
+            "type": "Geometry",
+            "name": "DebugGeo",
+            "path" : ["shaders/ScreenQuadGeo.glsl"]
+        },
+
       {
         "type": "Fragment",
         "name": "SSAOPassFragment",
@@ -87,12 +97,16 @@
       "name": "SSAOBlurShader",
        "debug" : false,
     "Shaders"  : [
-      {
-        "type": "Vertex",
-        "name": "SSAOBlurPassVertex",
-        "path" : ["shaders/LightingPassVertex.glsl"]
-      },
-      {
+            {
+                "type": "Vertex",
+                "name": "DebugVertex",
+                "path" : ["shaders/ScreenQuadVertex.glsl"]
+            },
+            {
+                "type": "Geometry",
+                "name": "DebugGeo",
+                "path" : ["shaders/ScreenQuadGeo.glsl"]
+            },      {
         "type": "Fragment",
         "name": "SSAOBlurPassFragment",
         "path" : ["shaders/SSAOBlurFragment.glsl"]
@@ -106,12 +120,16 @@
       "name": "BloomPassFinalShader",
        "debug" : false,
     "Shaders"  : [
-      {
-        "type": "Vertex",
-        "name": "BloomPassFinalVertex",
-        "path" : ["shaders/LightingPassVertex.glsl"]
-      },
-      {
+            {
+                "type": "Vertex",
+                "name": "DebugVertex",
+                "path" : ["shaders/ScreenQuadVertex.glsl"]
+            },
+            {
+                "type": "Geometry",
+                "name": "DebugGeo",
+                "path" : ["shaders/ScreenQuadGeo.glsl"]
+            },      {
         "type": "Fragment",
         "name": "BloomPassFinalFragment",
         "path" : ["shaders/BloomFinalFragment.glsl"]
@@ -128,8 +146,14 @@
       {
         "type": "Vertex",
         "name": "DebugVertex",
-        "path" : ["shaders/LightingPassVertex.glsl"]
+        "path" : ["shaders/ScreenQuadVertex.glsl"]
       },
+        {
+          "type": "Geometry",
+          "name": "DebugGeo",
+          "path" : ["shaders/ScreenQuadGeo.glsl"]
+        },
+
       {
         "type": "Fragment",
         "name": "DebugFragment",
@@ -164,12 +188,16 @@
           "name": "DOFShader",
            "debug" : false,
         "Shaders"  : [
-          {
-            "type": "Vertex",
-            "name": "DOFVertex",
-            "path" : ["shaders/LightingPassVertex.glsl"]
-          },
-          {
+            {
+                "type": "Vertex",
+                "name": "DebugVertex",
+                "path" : ["shaders/ScreenQuadVertex.glsl"]
+            },
+            {
+                "type": "Geometry",
+                "name": "DebugGeo",
+                "path" : ["shaders/ScreenQuadGeo.glsl"]
+            },          {
             "type": "Fragment",
             "name": "DOFFragment",
             "path" : ["shaders/DOFFragment.glsl"]
@@ -185,11 +213,16 @@
        "debug" : false,
 
     "Shaders"  : [
-      {
-        "type": "Vertex",
-        "name": "LightingPassVertex",
-        "path" : ["shaders/LightingPassVertex.glsl"]
-       },
+        {
+            "type": "Vertex",
+            "name": "DebugVertex",
+            "path" : ["shaders/ScreenQuadVertex.glsl"]
+        },
+        {
+            "type": "Geometry",
+            "name": "DebugGeo",
+            "path" : ["shaders/ScreenQuadGeo.glsl"]
+        },
       {
         "type": "Fragment",
         "name": "LightingPassFragment",

@@ -24,7 +24,7 @@ layout(std140) uniform lightSources
 //uniform Light lights[@numLights];
 uniform vec3 viewPos;
 uniform vec2 screenResolution;
-
+in vec2 uv;
 
 const float PI = 3.14159265359;
 // ----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 void main()
 {
 
-  vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
+//  vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
 
   vec3 albedo     =   pow(texture(albedoMetallicSampler, uv).rgb, vec3(2.2));
   float metallic  = texture(albedoMetallicSampler,uv).a;

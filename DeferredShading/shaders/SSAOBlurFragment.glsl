@@ -4,9 +4,11 @@ out float fragColour;
 uniform sampler2D ssaoInput;
 uniform vec2 screenResolution;
 const float fourSquared=4.0*4.0;
+
+in vec2 uv;
 void main()
 {
-  vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
+  //vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
 
 
     vec2 texelSize = 1.0 / vec2(textureSize(ssaoInput, 0));

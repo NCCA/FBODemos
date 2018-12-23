@@ -142,6 +142,7 @@ private:
     GLuint m_floorNormalTexture;
     GLuint m_noiseTexture=0;
     GLuint m_txBuffer;
+    GLuint m_lightTxBuffer;
     std::vector<GLuint> m_randTextureID;
     bool m_debugOn=false;
     int m_debugAttachment=0;
@@ -152,6 +153,7 @@ private:
     float m_focalDistance=8.0f;
     float m_focusDistance=0.55f;
     GLuint m_teapotTransformTBO;
+    GLuint m_lightTransformTBO;
 
     struct Light
     {
@@ -202,6 +204,7 @@ private:
     int m_fpsTimer;
     int m_fps=0;
     int m_frames=0;
+    int m_bloomBlurAmmount=10;
 
 
 };

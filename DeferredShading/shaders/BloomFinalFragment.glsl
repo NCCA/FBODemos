@@ -8,10 +8,10 @@ uniform sampler2D bloomBlur;
 uniform bool bloom;
 uniform float exposure;
 uniform float gamma=2.2;
-
+in vec2 uv;
 void main()
 {
-  vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
+  //vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
 
     vec3 hdrColor = texture(scene, uv).rgb;
     vec3 bloomColor = texture(bloomBlur, uv).rgb;
