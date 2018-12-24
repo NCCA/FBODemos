@@ -1,4 +1,11 @@
 #version 330 core
+#pragma optionNV(fastmath on)
+#pragma optionNV(fastprecision on)
+#pragma optionNV(ifcvt all)
+#pragma optionNV(inline all)
+#pragma optionNV(strict on)
+#pragma optionNV(unroll all)
+
 layout(location=0)out vec4 fragColour;
 layout(location=1)out vec4 brightness;
 //in vec2 uv;
@@ -21,7 +28,6 @@ layout(std140) uniform lightSources
   Light lights[@numLights];
 }ls;
 
-//uniform Light lights[@numLights];
 uniform vec3 viewPos;
 uniform vec2 screenResolution;
 in vec2 uv;

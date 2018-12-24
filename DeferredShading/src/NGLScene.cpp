@@ -85,9 +85,14 @@ void NGLScene::initializeGL()
     std::cerr<<"problem loading shaders\n";
     exit(EXIT_FAILURE);
   }
+  shader->use(SSAOPassShader);
+  shader->setUniform("positionSampler",0);
+  shader->setUniform("normalSampler",1);
+  shader->setUniform("texNoise",2);
+
 
   ngl::VAOPrimitives::instance()->createTrianglePlane("floor",30,30,10,10,ngl::Vec3::up());
-  ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,8);
+  ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,20);
   ngl::msg->addMessage("Creating m_renderFBO");
   FrameBufferObject::setDefaultFBO(defaultFramebufferObject());
   m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
@@ -275,10 +280,6 @@ void NGLScene::initializeGL()
   createSSAOKernel();
   createTransformTBO();
 
-/*
-  TexturePack tp;
-  tp.loadJSON("textures/textures.json");
-  */
   QtImGui::initialize(this);
   std::vector<std::string> albedoTextures={"textures/arrayTextures/copperAlbedo.png", "textures/arrayTextures/rustyAlbedo.png",
                                    "textures/arrayTextures/greasyAlbedo.png", "textures/arrayTextures/woodAlbedo.png",
@@ -443,7 +444,12 @@ void NGLScene::createTransformTBO()
 
 
 
-
+    struct BloomParam
+    {
+        bool bloom;
+        float exposure;
+        float gamma;
+    };
 
 }
 void NGLScene::createSSAOKernel()
@@ -597,7 +603,6 @@ void NGLScene::lightingPass()
 
   shader->setUniformBuffer("lightSources",sizeof(Light)*m_lights.size(),&m_lights[0].position.m_x);
   shader->setUniform("viewPos",m_cam.getEye());
-//  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   shader->setUniform("useAO",bool(m_useAO));
   m_screenQuad->bind();
   m_screenQuad->draw();
@@ -628,15 +633,6 @@ void NGLScene::forwardPass()
 
   shader->use(ColourShader);
   shader->setUniform("TBO",0);
- // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-//  for(auto l : m_lights)
-//  {
-//    m_transform.setPosition(l.position);
-//    shader->setUniform("colour",ngl::Vec4(l.colour.m_r,l.colour.m_g,l.colour.m_b,1.0f));
-//    ngl::Mat4 MVP =m_cam.getVP()*m_transform.getMatrix();
-//    shader->setUniform("MVP",MVP);
-//    ngl::VAOPrimitives::instance()->draw("sphere");
-//  }
   auto *prim=ngl::VAOPrimitives::instance();
   auto bufferID=prim->getVAOFromName("sphere")->getID();
   int size=prim->getVAOFromName("sphere")->numIndices();
@@ -654,7 +650,6 @@ void NGLScene::bloomBlurPass()
 {
   auto *shader=ngl::ShaderLib::instance();
   shader->use(BloomPassShader);
- // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   m_screenQuad->bind();
   m_pingPongBuffer[0]->setViewport();
@@ -665,7 +660,6 @@ void NGLScene::bloomBlurPass()
   {
     m_pingPongBuffer[horizontal]->bind();
     shader->setUniform("horizontal", bool(horizontal));
-    //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,
                   firstTime ? m_forwardPass->getTextureID("brightness") :
@@ -686,10 +680,6 @@ void NGLScene::ssaoPass()
 {
   auto *shader=ngl::ShaderLib::instance();
   shader->use(SSAOPassShader);
- // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-  shader->setUniform("positionSampler",0);
-  shader->setUniform("normalSampler",1);
-  shader->setUniform("texNoise",2);
   m_ssaoPass->bind();
   shader->setUniform("projection", m_cam.getProjection());
 
@@ -703,8 +693,6 @@ void NGLScene::ssaoPass()
   m_ssaoPass->setViewport();
   m_screenQuad->draw();
   shader->use(SSAOBlurShader);
- // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-  shader->setUniform("ssaoInput",0);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_ssaoPass->getTextureID("ssao"));
   m_screenQuad->draw();
@@ -726,12 +714,28 @@ void NGLScene::finalPass()
   glBindTexture(GL_TEXTURE_2D, m_forwardPass->getTextureID("fragColour"));
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_pingPongBuffer[0]->getTextureID("fragColour"));
-  shader->setUniform("bloom", m_useBloom);
-  shader->setUniform("exposure", m_exposure);
-  shader->setUniform("gamma",m_gamma);
+
+  struct BloomParam
+  {
+      bool bloom;
+      float exposure;
+      float gamma;
+  };
+  BloomParam b;
+  b.bloom=m_useBloom;
+  b.exposure=m_exposure;
+  b.gamma=m_gamma;
+
+//  shader->setUniform("bloom", m_useBloom);
+//  shader->setUniform("exposure", m_exposure);
+//  shader->setUniform("gamma",m_gamma);
+  shader->setUniformBuffer("BloomParam",sizeof(BloomParam),&b.bloom);
+
   shader->setUniform("scene",0);
   shader->setUniform("bloomBlur",1);
- // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+
+
+
   m_screenQuad->draw();
   m_dofTarget->unbind();
 
@@ -767,8 +771,6 @@ void NGLScene::finalPass()
   shader->setUniform("uTexelOffset",0.0f,1.0f);
   shader->setUniform("colourSampler",2);
   glViewport(0, 0, m_win.width, m_win.height);
-  //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
   m_screenQuad->draw();
   m_screenQuad->unbind();
   }
@@ -912,7 +914,7 @@ void NGLScene::createScreenQuad()
 void NGLScene::editLightShader()
 {
   auto *shader=ngl::ShaderLib::instance();
-  m_numLights=std::min(m_numLights, std::max(1, 400));
+  m_numLights=std::min(m_numLights, std::max(1, 5000));
 
   auto editString=fmt::format("{0}",m_numLights);
   shader->editShader(LightingPassFragment,"@numLights",editString);
@@ -1130,7 +1132,7 @@ void NGLScene::drawUI()
   ImGui::End();
 
   ImGui::Begin("Lights");
-  if (ImGui::SliderInt("Number of Lights", &m_numLights,1,400) )
+  if (ImGui::SliderInt("Number of Lights", &m_numLights,1,5000) )
     editLightShader();
   ImGui::SliderFloat("Light intensity max", &m_lightMaxIntensity,1.0f,200.0f);
   ImGui::Separator();

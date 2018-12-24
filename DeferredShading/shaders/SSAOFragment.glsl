@@ -1,4 +1,11 @@
 #version 330 core
+#pragma optionNV(fastmath on)
+#pragma optionNV(fastprecision on)
+#pragma optionNV(ifcvt all)
+#pragma optionNV(inline all)
+#pragma optionNV(strict on)
+#pragma optionNV(unroll all)
+
 out float fragColour;
 
 
@@ -18,7 +25,6 @@ uniform mat4 projection;
 void main()
 {
   vec2 noiseScale = vec2(screenResolution.x/4.0, screenResolution.y/4.0);
-  //vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
   // get input for SSAO algorithm
   vec3 fragPos = texture(positionSampler, uv).xyz;
   vec3 normal = normalize(texture(normalSampler, uv).rgb);

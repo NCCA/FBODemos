@@ -1,4 +1,11 @@
 #version 330 core
+#pragma optionNV(fastmath on)
+#pragma optionNV(fastprecision on)
+#pragma optionNV(ifcvt all)
+#pragma optionNV(inline all)
+#pragma optionNV(strict on)
+#pragma optionNV(unroll all)
+
 layout (location = 0) out vec3 position;
 layout (location = 1) out vec4 normal;
 layout (location = 2) out vec4 albedoSpec;

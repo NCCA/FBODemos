@@ -1,4 +1,11 @@
 #version 330 core
+#pragma optionNV(fastmath on)
+#pragma optionNV(fastprecision on)
+#pragma optionNV(ifcvt all)
+#pragma optionNV(inline all)
+#pragma optionNV(strict on)
+#pragma optionNV(unroll all)
+
 out vec4 fragColour;
 
 
@@ -10,7 +17,6 @@ uniform vec2 screenResolution;
 in vec2 uv;
 void main()
 {
- // vec2  uv=vec2(gl_FragCoord.x/screenResolution.x,gl_FragCoord.y/screenResolution.y);
 
   vec2 tex_offset = 1.0 / textureSize(image, 0); // gets size of single texel
     vec3 result = texture(image, uv).rgb * weight[0]; // current fragment's contribution
