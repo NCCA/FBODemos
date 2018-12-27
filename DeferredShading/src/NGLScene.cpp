@@ -1,6 +1,6 @@
 #include <QMouseEvent>
 #include <QGuiApplication>
-
+#include "MultiBufferIndexVAO.h"
 #include "NGLScene.h"
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
@@ -10,17 +10,24 @@
 #include <ngl/VAOFactory.h>
 #include <ngl/Texture.h>
 #include <ngl/NGLStream.h>
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/vector3.h>
+
 #include "ScopedBind.h"
 #include "TexturePack.h"
 #include "imgui.h"
 #include "QtImGui.h"
 #include "ImGuizmo.h"
 #include "TextureArray.h"
+#include <QTime>
 NGLScene::NGLScene()
 {
   setTitle("Deferred Render");
   m_lights.resize(m_numLights);
   m_timer.start();
+  m_totalTimeAverage.resize(20);
 
 }
 
@@ -51,11 +58,15 @@ auto ColourShader="ColourShader";
 auto SSAOPassShader="SSAOPassShader";
 auto SSAOBlurShader="SSAOBlurShader";
 auto DOFShader="DOFShader";
+auto ParticleShader="ParticleShader";
+auto AnimationPassShader="AnimationPassShader";
 void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
   ngl::NGLInit::instance();
+  m_emitter.reset( new Emitter(ngl::Vec3(0.0f,0.0f,0.0f),50000));
+  ngl::VAOFactory::registerVAOCreator("multiBufferIndexVAO", MultiBufferIndexVAO::create);
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);			   // Grey Background
   // enable depth testing for drawing
@@ -298,9 +309,87 @@ void NGLScene::initializeGL()
   "textures/arrayTextures/woodRoughness.png","textures/arrayTextures/panelRoughness.png",};
   TextureArray roughness("roughness",roughnessTextures,2048,2048);
 
+
+  m_scene = m_importer.ReadFile("meshes/Bob.fbx",
+                                aiProcessPreset_TargetRealtime_Quality |
+                                aiProcess_Triangulate
+                                );
+  if(m_scene == 0)
+  {
+    std::cerr<<"Error loading scene file\n";
+    exit(EXIT_FAILURE);
+  }
+
+  loaded=m_mesh.load(m_scene);
+  if(loaded == false)
+  {
+      std::cerr<<"Assimp reports "<<m_importer.GetErrorString()<<"\n";
+      exit(EXIT_FAILURE);
+  }
+
+  m_particleTimer=startTimer(0);
+
+
+
+
 }
 
+void NGLScene::animationPass()
+{
 
+  auto shader=ngl::ShaderLib::instance();
+  shader->use(AnimationPassShader);
+  std::vector<ngl::Mat4> transforms;
+  //QTime t=QTime::currentTime();
+  //float time=(t.msec()/1000.0f)*m_mesh.getDuration()/m_mesh.getTicksPerSec();
+  //static float time=0.0f;
+  static float animtime=0.0f;
+  m_mesh.boneTransform(animtime, transforms);
+  animtime+=0.1f;
+  if(animtime >= 30.0f)
+    animtime=0.0f;
+  ngl::Transformation tx;
+  tx.setScale(0.2f,0.2f,0.2f);
+
+  static float xpos=-10.0f;
+  static float yrot=90.0f;
+  enum class direction{FWD,BWD};
+  static direction dir=direction::FWD;
+  if(dir == direction::FWD)
+  {
+    xpos+=0.2f;
+    if(xpos>10.0f)
+    {
+      dir=direction::BWD;
+      yrot=-90.0f;
+    }
+  }
+  else
+  {
+    xpos-=0.2f;
+    if(xpos<-10.0f)
+    {
+      dir=direction::FWD;
+      yrot=90.0f;
+    }
+
+  }
+
+  tx.setRotation(0,yrot,0);
+  tx.setPosition(xpos,-0.35f,-4.0f);
+  shader->setUniform("MVP",m_cam.getVP()*tx.getMatrix());
+  shader->setUniform("MV",m_cam.getView()*tx.getMatrix());
+  shader->setUniform("M",tx.getMatrix());
+
+  auto size=transforms.size();
+  for (unsigned int i = 0 ; i < size ; ++i)
+  {
+    shader->setUniform(fmt::format("gBones[{0}]",i).c_str(),transforms[i]);
+//    ngl::msg->addMessage(fmt::format("gBones[{0}]",i));
+  }
+
+  m_mesh.render();
+}
 
 void NGLScene::updateTransformTBO()
 {
@@ -441,16 +530,6 @@ void NGLScene::createTransformTBO()
     glActiveTexture( GL_TEXTURE5 );
     glBindTexture(GL_TEXTURE_BUFFER,m_lightTransformTBO);
     glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_lightTxBuffer);
-
-
-
-    struct BloomParam
-    {
-        bool bloom;
-        float exposure;
-        float gamma;
-    };
-
 }
 void NGLScene::createSSAOKernel()
 {
@@ -482,14 +561,13 @@ void NGLScene::createSSAOKernel()
 
   auto *shader=ngl::ShaderLib::instance();
   shader->use(SSAOPassShader);
-  //shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
 
   // Send kernel + rotation
   for (unsigned int i = 0; i < 64; ++i)
+  {
     shader->setUniform(fmt::format("samples[{0}]",i),m_ssaoKernel[i]);
-  shader->use(SSAOBlurShader);
- // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-
+  }
 }
 
 void NGLScene::loadDOFUniforms()
@@ -571,9 +649,13 @@ void NGLScene::geometryPass()
   glDrawArraysInstanced(GL_TRIANGLES,0,size,256);
   glBindTexture(GL_TEXTURE_BUFFER, 0);
   glBindVertexArray(0);
-  s_rot+=1.0f;
   glBindTexture(GL_TEXTURE_BUFFER, 0);
+  s_rot+=1.0f;
 
+  // now animation
+  if(m_showBob==true)
+    animationPass();
+  // now floort
   shader->use(GeometryPassCheckerShader);
   shader->setUniform("normalMapSampler",0);
   glActiveTexture(GL_TEXTURE0);
@@ -642,6 +724,11 @@ void NGLScene::forwardPass()
   glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,size,m_lights.size());
   glBindTexture(GL_TEXTURE_BUFFER, 0);
   glBindVertexArray(0);
+  if(m_particleSystem==true)
+  {
+    shader->use(ParticleShader);
+    m_emitter->draw(m_cam.getVP());
+  }
   m_forwardPass->unbind();
 
 }
@@ -656,7 +743,7 @@ void NGLScene::bloomBlurPass()
 
   bool firstTime=true;
   bool horizontal=true;
-  for (size_t i = 0; i < m_bloomBlurAmmount; i++)
+  for (int i = 0; i < m_bloomBlurAmmount; i++)
   {
     m_pingPongBuffer[horizontal]->bind();
     shader->setUniform("horizontal", bool(horizontal));
@@ -892,6 +979,8 @@ void NGLScene::paintGL()
 }
   std::chrono::steady_clock::time_point endPaint = std::chrono::steady_clock::now();
   m_totalDuration=std::chrono::duration_cast<std::chrono::microseconds>(endPaint - startPaint).count();
+  m_totalTimeAverage.erase(std::begin(m_totalTimeAverage));
+  m_totalTimeAverage.push_back(m_totalDuration);
   if(  m_showUI==true)
     drawUI();
 
@@ -1091,7 +1180,12 @@ void NGLScene::timerEvent(QTimerEvent *_event)
     }
     }
   }
-
+  if(_event->timerId() ==   m_particleTimer)
+    {
+//      ngl::msg->addWarning("particle update");
+     if(m_particleSystem==true)
+        m_emitter->update();
+    }
   update();
 }
 
@@ -1108,11 +1202,18 @@ void NGLScene::drawUI()
   ImGui::Text("Bloom Blur Pass %ld uS ", m_bloomBlurPassDuration);
   ImGui::Text("Final  Pass %ld uS ", m_finalPassDuration);
   ImGui::Text("Total Time %ld uS ", m_totalDuration);
+
+  //ImGui::PlotLines("Total Time", &m_totalTimeAverage[0], m_totalTimeAverage.size(), 0, fmt::format("Total Time {0} uS ", m_totalDuration).c_str(), 0.0f, 4.0f, ImVec2(0,80));
+
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   ImGui::End();
 
   ImGui::Begin("Controls");
+  ImGui::Checkbox("Show Particles", &m_particleSystem);
+  ImGui::Checkbox("Show Bob", &m_showBob);
+
+
   ImGui::Checkbox("Use DOF", &m_useDOF);
 
   ImGui::SliderFloat("F-Stop", &m_fstop,0.8f,32.0f);
@@ -1122,6 +1223,18 @@ void NGLScene::drawUI()
   ImGui::SliderFloat("Focus Distance", &m_focusDistance,0.0f,10.0f);
   ImGui::Separator();
   ImGui::Checkbox("Use AO", &m_useAO);
+  if(ImGui::SliderFloat("SSAO Radius", &m_ssaoRadius,0.0f,2.0f) )
+  {
+    auto shader = ngl::ShaderLib::instance();
+    shader->use(SSAOPassShader);
+    shader->setUniform("radius",m_ssaoRadius);
+  }
+  if(ImGui::SliderFloat("SSAO Bias", &m_ssaoBias,0.0f,1.0f))
+  {
+    auto shader = ngl::ShaderLib::instance();
+    shader->use(SSAOPassShader);
+    shader->setUniform("bias",m_ssaoBias);
+  }
   ImGui::Checkbox("Use Bloom", &m_useBloom);
   ImGui::SliderInt("Bloom Blur Level", &m_bloomBlurAmmount,0,40);
 

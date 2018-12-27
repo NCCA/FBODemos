@@ -4,13 +4,18 @@
 #include <ngl/Text.h>
 #include <ngl/Mat4.h>
 #include <ngl/AbstractVAO.h>
+#include <vector>
 #include <QElapsedTimer>
 #include "FrameBufferObject.h"
 #include "FirstPersonCamera.h"
+#include "Emitter.h"
 #include <QOpenGLWindow>
 #include <QSet>
 #include <memory>
 #include "WindowParams.h"
+#include <assimp/scene.h>
+#include "Mesh.h"
+
 
 //----------------------------------------------------------------------------------------------------------------------
 /// @file NGLScene.h
@@ -121,6 +126,7 @@ private:
 
     void editLightShader();
     void geometryPass();
+    void animationPass();
     void lightingPass();
     void forwardPass();
     void ssaoPass();
@@ -201,10 +207,23 @@ private:
     bool m_textureDebug=false;
     GLuint m_debugTextureID=1;
     bool m_showUI=true;
-    int m_fpsTimer;
-    int m_fps=0;
-    int m_frames=0;
     int m_bloomBlurAmmount=10;
+    float m_ssaoRadius = 0.5f;
+    float m_ssaoBias = 0.025f;
+    std::vector<float> m_totalTimeAverage;
+    std::unique_ptr<Emitter> m_emitter;
+    int m_particleTimer;
+
+    const aiScene* m_scene;
+    std::string m_sceneName;
+    Assimp::Importer m_importer;
+    /// @brief the mesh to be animated, this will do all the animation and drawing
+    Mesh m_mesh;
+
+    ngl::Mat4 m_rootTransform;
+    bool m_particleSystem=true;
+    bool m_showBob=true;
+
 
 
 };

@@ -8,13 +8,11 @@
 
 layout (location=0) out vec4 fragColour;
 layout (location=1) out vec4 brightness;
-//uniform vec4 colour;
-in vec4 colour;
+in vec4 pointColour;
 
 void main()
 {
-  fragColour=colour;
-
+  fragColour=pointColour;
   float bright = dot(fragColour.rgb, vec3(0.2126, 0.7152, 0.0722));
   if(bright > 1.0)
       brightness = vec4(fragColour.rgb, 1.0);

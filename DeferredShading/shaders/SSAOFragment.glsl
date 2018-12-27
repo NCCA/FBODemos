@@ -14,9 +14,9 @@ uniform sampler2D normalSampler;
 uniform sampler2D texNoise;
 
 uniform vec3 samples[64];
-int kernelSize = 64;
-float radius = 0.5;
-float bias = 0.025;
+const int kernelSize = 64;
+uniform float radius = 0.5;
+uniform float bias = 0.025;
 uniform vec2 screenResolution;
 in vec2 uv;
 uniform mat4 projection;

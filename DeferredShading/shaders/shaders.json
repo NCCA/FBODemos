@@ -184,6 +184,43 @@
 
    },
 
+        "ShaderProgram": {
+          "name": "ParticleShader",
+           "debug" : false,
+        "Shaders"  : [
+          {
+            "type": "Vertex",
+            "name": "ParticleVertex",
+            "path" : ["shaders/ParticleVertex.glsl"]
+          },
+          {
+            "type": "Fragment",
+            "name": "ParticleFragment",
+            "path" : ["shaders/ParticleFragment.glsl"]
+
+          }
+        ]
+
+       },
+    "ShaderProgram": {
+      "name": "AnimationPassShader",
+       "debug" : false,
+    "Shaders"  : [
+      {
+        "type": "Vertex",
+        "name": "ParticleVertex",
+        "path" : ["shaders/SkinningVertex.glsl"]
+      },
+      {
+        "type": "Fragment",
+        "name": "ParticleFragment",
+        "path" : ["shaders/SkinningFragment.glsl"]
+
+      }
+    ]
+
+   },
+
     "ShaderProgram": {
           "name": "DOFShader",
            "debug" : false,
