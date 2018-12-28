@@ -217,7 +217,8 @@
         "path" : ["shaders/SkinningFragment.glsl"]
 
       }
-    ]
+    ] ,     "Uniforms" : [{"name" : "TBO", "type" : "int", "value" :"6"} ]
+
 
    },
 

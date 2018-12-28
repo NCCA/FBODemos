@@ -326,13 +326,38 @@ void NGLScene::initializeGL()
       std::cerr<<"Assimp reports "<<m_importer.GetErrorString()<<"\n";
       exit(EXIT_FAILURE);
   }
-
+  createAnimationTBO();
   m_particleTimer=startTimer(0);
 
+}
+
+void NGLScene::createAnimationTBO()
+{
+
+  glGenBuffers(1,&m_animationBuffer);
+  glBindBuffer(GL_TEXTURE_BUFFER, m_animationBuffer);
+  std::vector<ngl::Mat4> transforms;
+
+  for(float step=0.0f; step<30.0f; step+=0.1f)
+  {
+    std::vector<ngl::Mat4> tx;
+    m_mesh.boneTransform(step, tx);
+    std::copy(std::begin(tx), std::end(tx), std::back_inserter(transforms));
+
+  }
+  size_t size=transforms.size()*sizeof(ngl::Mat4);
+  ngl::msg->addMessage(fmt::format("Anim buffer {0}",size));
+  glBufferData(GL_TEXTURE_BUFFER, size, &transforms[0].m_openGL[0], GL_STATIC_DRAW);
+
+
+  glGenTextures(1, &m_animationTBO);
+  glBindTexture(GL_TEXTURE_BUFFER,m_animationTBO);
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_animationBuffer);
 
 
 
 }
+
 
 void NGLScene::animationPass()
 {
@@ -343,50 +368,48 @@ void NGLScene::animationPass()
   //QTime t=QTime::currentTime();
   //float time=(t.msec()/1000.0f)*m_mesh.getDuration()/m_mesh.getTicksPerSec();
   //static float time=0.0f;
-  static float animtime=0.0f;
-  m_mesh.boneTransform(animtime, transforms);
-  animtime+=0.1f;
-  if(animtime >= 30.0f)
-    animtime=0.0f;
+  static int animtime=0;
+  //m_mesh.boneTransform(animtime, transforms);
+  //ngl::msg->addMessage(fmt::format("Num bones {0}",transforms.size()));
+  animtime++;
+  if(animtime >= 300)
+    animtime=0;
   ngl::Transformation tx;
   tx.setScale(0.2f,0.2f,0.2f);
 
-  static float xpos=-10.0f;
-  static float yrot=90.0f;
-  enum class direction{FWD,BWD};
-  static direction dir=direction::FWD;
-  if(dir == direction::FWD)
+  static int walkRot=0;
+  float rot=ngl::radians(walkRot);
+  float x=cosf(rot)*5;
+  float z=sinf(rot)*5;
+  ngl::Vec3 pos(x,-0.35f,z);
+  walkRot+=2;
+  rot=ngl::radians(walkRot);
+  x=cosf(rot)*5;
+  z=sinf(rot)*5;
+  ngl::Vec3 nextPos(x,-0.35f,z);
+  ngl::Vec3 dir=nextPos-pos;
+  float yrot=atan2(dir.m_z,dir.m_x);
+  yrot=ngl::degrees(yrot);
+  tx.setRotation(0,90-yrot,0);
+  tx.setPosition(pos);
+  glActiveTexture(GL_TEXTURE6);
+  glBindTexture(GL_TEXTURE_BUFFER, m_animationTBO);
+//  shader->setUniform("TBO",6);
+  struct TransformUBO
   {
-    xpos+=0.2f;
-    if(xpos>10.0f)
-    {
-      dir=direction::BWD;
-      yrot=-90.0f;
-    }
-  }
-  else
-  {
-    xpos-=0.2f;
-    if(xpos<-10.0f)
-    {
-      dir=direction::FWD;
-      yrot=90.0f;
-    }
+    ngl::Mat4 MVP;
+    ngl::Mat4 M;
+    ngl::Mat4 MV;
+    int step;
+  };
 
-  }
+  TransformUBO tb;
+  tb.MVP=m_cam.getVP()*tx.getMatrix();
+  tb.M=tx.getMatrix();
+  tb.MV=m_cam.getView()*tx.getMatrix();
+  tb.step=animtime;
+  shader->setUniformBuffer("TransformUBO",sizeof(TransformUBO),&tb.MVP.m_openGL[0]);
 
-  tx.setRotation(0,yrot,0);
-  tx.setPosition(xpos,-0.35f,-4.0f);
-  shader->setUniform("MVP",m_cam.getVP()*tx.getMatrix());
-  shader->setUniform("MV",m_cam.getView()*tx.getMatrix());
-  shader->setUniform("M",tx.getMatrix());
-
-  auto size=transforms.size();
-  for (unsigned int i = 0 ; i < size ; ++i)
-  {
-    shader->setUniform(fmt::format("gBones[{0}]",i).c_str(),transforms[i]);
-//    ngl::msg->addMessage(fmt::format("gBones[{0}]",i));
-  }
 
   m_mesh.render();
 }
@@ -1081,7 +1104,7 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_Period : ++m_debugTextureID; break;
   case Qt::Key_U : m_showUI^=true; break;
   case Qt::Key_Space :
-    m_cam.set({0,2,10},{0,0,0},{0,1,0});
+    m_cam.set({0,4,0},{0,0,0},{0,0,1});
   break;
   case Qt::Key_4 :
     for(auto &l : m_lights)

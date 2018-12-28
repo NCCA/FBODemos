@@ -9,7 +9,6 @@ layout (location = 2) in vec3 inNormal;
 layout (location=3) in ivec4 BoneIDs;
 layout (location=4) in vec4  Weights;
 
-const int MAX_BONES = 16;
 
 /// create an interface block for ease
 out VertexData
@@ -21,26 +20,51 @@ out VertexData
   float texID;
 }vertexOut;
 
-uniform mat4 MVP;
-uniform mat4 M;
-uniform mat4 MV;
 
-uniform mat4 gBones[MAX_BONES];
+layout(std140) uniform TransformUBO
+{
+   mat4 MVP;
+   mat4 M;
+   mat4 MV;
+   int step;
+}tx;
+
+uniform samplerBuffer TBO;
+
+
+
+
+
+mat4 getMatrix(int offset)
+{
+    return (mat4(texelFetch(TBO, offset),
+                 texelFetch(TBO, offset + 1),
+                 texelFetch(TBO, offset + 2),
+                 texelFetch(TBO, offset + 3)));
+}
+
+
 
 void main()
 {
+   const int size=64;
+   mat4 gBones[16];
+   for(int i=0; i<16; ++i)
+   {
+     gBones[i]=getMatrix((tx.step*size)+(i*4));
+   }
 	 mat4 BoneTransform = gBones[BoneIDs[0]] * Weights[0];
    BoneTransform     += gBones[BoneIDs[1]] * Weights[1];
    BoneTransform     += gBones[BoneIDs[2]] * Weights[2];
    BoneTransform     += gBones[BoneIDs[3]] * Weights[3];
    vec4 pos   = BoneTransform*vec4(inVert, 1.0);
 
-   vertexOut.fragPos = vec3(M * pos);
-   vertexOut.fragVS  = vec3(MV* pos);
+   vertexOut.fragPos = vec3(tx.M * pos);
+   vertexOut.fragVS  = vec3(tx.MV* pos);
    vertexOut.uv=inUV;
    vertexOut.normal=inNormal;
    vertexOut.texID=3;
-   gl_Position = MVP*pos;
+   gl_Position = tx.MVP*pos;
 
 
 }

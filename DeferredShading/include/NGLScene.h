@@ -123,7 +123,7 @@ private:
     void createScreenQuad();
     void createTransformTBO();
     void updateTransformTBO();
-
+    void createAnimationTBO();
     void editLightShader();
     void geometryPass();
     void animationPass();
@@ -147,8 +147,6 @@ private:
     std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
     GLuint m_floorNormalTexture;
     GLuint m_noiseTexture=0;
-    GLuint m_txBuffer;
-    GLuint m_lightTxBuffer;
     std::vector<GLuint> m_randTextureID;
     bool m_debugOn=false;
     int m_debugAttachment=0;
@@ -160,6 +158,10 @@ private:
     float m_focusDistance=0.55f;
     GLuint m_teapotTransformTBO;
     GLuint m_lightTransformTBO;
+    GLuint m_animationTBO;
+    GLuint m_txBuffer;
+    GLuint m_lightTxBuffer;
+    GLuint m_animationBuffer;
 
     struct Light
     {
