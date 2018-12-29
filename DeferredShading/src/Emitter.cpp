@@ -29,12 +29,12 @@ Emitter::Emitter(ngl::Vec3 _pos, unsigned int _numParticles )
     g.px=p.m_px=m_pos.m_x;
     g.py=p.m_py=m_pos.m_y;
     g.pz=p.m_pz=m_pos.m_z;
-    g.pw=0.0f;
+    g.pw=0.1f;
     ngl::Vec3 c=rand->getRandomColour3()*10;
-    p.m_r=g.pr=c.m_r;
-    p.m_g=g.pg=c.m_g;
-    p.m_b=g.pb=c.m_b;
-
+    g.pr=0.5f+c.m_r;
+    g.pg=0.5f+c.m_g;
+    g.pb=0.5f+c.m_b;
+    p.m_maxLife=rand->randomPositiveNumber(50);
     p.m_dx=rand->randomNumber(5)+0.5f;
     p.m_dy=rand->randomPositiveNumber(10.0f)+0.5f;
     p.m_dz=rand->randomNumber(5)+0.5f;
@@ -90,7 +90,7 @@ void Emitter::update()
     glPtr[glIndex+2]=m_particles[i].m_pz;
     glPtr[glIndex+3]+=0.01f;
     // if we go below the origin re-set
-    if(m_particles[i].m_py <=m_pos.m_y-0.01f)
+    if(m_particles[i].m_py <=m_pos.m_y-0.01f || m_particles[i].m_currentLife > m_particles[i].m_maxLife)
     {
 
       m_particles[i].m_px=m_pos.m_x;
@@ -102,19 +102,17 @@ void Emitter::update()
       m_particles[i].m_dx=rand->randomNumber(2)+0.5f;
       m_particles[i].m_dy=rand->randomPositiveNumber(10)+0.5f;
       m_particles[i].m_dz=rand->randomNumber(2)+0.5f;
+      m_particles[i].m_maxLife=rand->randomPositiveNumber(50);
 
       glPtr[glIndex]=m_particles[i].m_px;
       glPtr[glIndex+1]=m_particles[i].m_py;
       glPtr[glIndex+2]=m_particles[i].m_pz;
-      glPtr[glIndex+3]=0.0f;
+      glPtr[glIndex+3]=0.5f;
 
       ngl::Vec3 c=rand->getRandomColour3()*10.0f;
-      glPtr[glIndex+4]=c.m_r;
-      glPtr[glIndex+5]=c.m_g;
-      glPtr[glIndex+6]=c.m_b;
-      m_particles[i].m_r=c.m_r;
-      m_particles[i].m_g=c.m_g;
-      m_particles[i].m_b=c.m_b;
+      glPtr[glIndex+4]=0.5f+c.m_r;
+      glPtr[glIndex+5]=0.5f+c.m_g;
+      glPtr[glIndex+6]=0.5f+c.m_b;
 
     }
   //  #pragma omp atomic

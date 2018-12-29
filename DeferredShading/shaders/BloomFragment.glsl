@@ -12,8 +12,7 @@ out vec4 fragColour;
 uniform sampler2D image;
 
 uniform bool horizontal;
-uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
-uniform vec2 screenResolution;
+const float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 in vec2 uv;
 void main()
 {

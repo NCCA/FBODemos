@@ -7,6 +7,7 @@
 #include <vector>
 #include <QElapsedTimer>
 #include "FrameBufferObject.h"
+#include "MultiSampleFrameBufferObject.h"
 #include "FirstPersonCamera.h"
 #include "Emitter.h"
 #include <QOpenGLWindow>
@@ -131,6 +132,7 @@ private:
     void forwardPass();
     void ssaoPass();
     void bloomBlurPass();
+    void ssrPass();
     void finalPass();
     void drawUI();
     void loadDOFUniforms();
@@ -143,6 +145,8 @@ private:
     std::unique_ptr<FrameBufferObject> m_ssaoPass;
     std::unique_ptr<FrameBufferObject> m_dofPass;
     std::unique_ptr<FrameBufferObject> m_dofTarget;
+    std::unique_ptr<FrameBufferObject> m_ssrFBO;
+    std::unique_ptr<FrameBufferObject> m_finalRender;
 
     std::array<std::unique_ptr<FrameBufferObject>,2> m_pingPongBuffer;
     GLuint m_floorNormalTexture;
@@ -162,7 +166,8 @@ private:
     GLuint m_txBuffer;
     GLuint m_lightTxBuffer;
     GLuint m_animationBuffer;
-
+    int m_fboWidth=1024;
+    int m_fboHeight=720;
     struct Light
     {
         ngl::Vec4 position; // xyz only but packed to vec4 for UBO
@@ -173,15 +178,14 @@ private:
     bool m_showLights=true;
     std::vector<Light> m_lights;
     std::vector<ngl::Vec3> m_ssaoKernel;
-
     float m_freq=1.0f;
     float m_lightRadius=4.0f;
     float m_lightYOffset=1.0f;
     bool m_lightRandom=false;
     bool m_useAO=true;
     int m_randomUpdateTimer;
-
     long m_geoPassDuration=0;
+    long m_animPassDuration=0;
     long m_ssaoPassDuration=0;
     long m_lightingPassDuration=0;
     long m_forwardPassDuration=0;

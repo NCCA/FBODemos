@@ -19,11 +19,10 @@ struct Particle
 	GLfloat m_dz;
 	/// @brief the current life value of the particle
 	GLfloat m_currentLife;
-	/// @brief gravity
+  GLfloat m_maxLife;
+  /// @brief gravity
 	GLfloat m_gravity;
-  GLfloat m_r;
-  GLfloat m_g;
-  GLfloat m_b;
+
 
 };
 #pragma pack(pop)

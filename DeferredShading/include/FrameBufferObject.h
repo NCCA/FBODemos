@@ -40,7 +40,7 @@ class FrameBufferObject
     //----------------------------------------------------------------------------------------------------------------------
     // Dtor will release all textures associated with the FBO so be careful if sharing them.
     //----------------------------------------------------------------------------------------------------------------------
-    ~FrameBufferObject() noexcept;
+    virtual ~FrameBufferObject() noexcept;
     //----------------------------------------------------------------------------------------------------------------------
     // this will add a depth buffer using a texture attachment this will always use an internal float buffer
     /// @param _format the format for the depth component (see  GLTextureDepthFormats for enumerations to GL types)
@@ -51,7 +51,7 @@ class FrameBufferObject
     /// @param _immutable Choose to use either faster immutable storage (glTexStorage) or slower mutable
     /// storage, glTexImage2d
     //----------------------------------------------------------------------------------------------------------------------
-    bool addDepthBuffer(GLTextureDepthFormats _format,  GLTextureMinFilter _min,
+    virtual bool addDepthBuffer(GLTextureDepthFormats _format,  GLTextureMinFilter _min,
                         GLTextureMagFilter _mag,GLTextureWrap _swrap,
                         GLTextureWrap _twrap, bool _immutable=false) noexcept;
     //----------------------------------------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ class FrameBufferObject
     /// @param _immutable Choose to use either faster immutable storage (glTexStorage) or slower mutable
     /// storage, glTexImage2d
     //----------------------------------------------------------------------------------------------------------------------
-    bool addColourAttachment(const std::string &_name, GLAttatchment _attachment,
+    virtual bool addColourAttachment(const std::string &_name, GLAttatchment _attachment,
                              GLTextureFormat _format, GLTextureInternalFormat _iformat, GLTextureDataType _type,
                              GLTextureMinFilter _min, GLTextureMagFilter _mag,
                              GLTextureWrap _swrap, GLTextureWrap _twrap,
@@ -124,7 +124,7 @@ class FrameBufferObject
     float height() const noexcept {return m_height;}
     //----------------------------------------------------------------------------------------------------------------------
     static void setDefaultFBO(GLuint _id){s_defaultFBO=_id;}
-  private :
+  protected :
     //----------------------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------------------
     GLuint m_id;

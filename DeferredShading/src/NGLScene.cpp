@@ -28,6 +28,9 @@ NGLScene::NGLScene()
   m_lights.resize(m_numLights);
   m_timer.start();
   m_totalTimeAverage.resize(20);
+  m_fboHeight*=devicePixelRatio();
+  m_fboWidth*=devicePixelRatio();
+
 
 }
 
@@ -106,7 +109,7 @@ void NGLScene::initializeGL()
   ngl::VAOPrimitives::instance()->createSphere("sphere",1.0f,20);
   ngl::msg->addMessage("Creating m_renderFBO");
   FrameBufferObject::setDefaultFBO(defaultFramebufferObject());
-  m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_renderFBO=FrameBufferObject::create(m_fboWidth,m_fboHeight);
   m_renderFBO->bind();
   m_renderFBO->addColourAttachment("position",GLAttatchment::_0,GLTextureFormat::RGB,GLTextureInternalFormat::RGB16F,
                                    GLTextureDataType::FLOAT,
@@ -144,7 +147,7 @@ void NGLScene::initializeGL()
   m_renderFBO->unbind();
 
   ngl::msg->addMessage("Creating m_lightingFBO");
-  m_lightingFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_lightingFBO=FrameBufferObject::create(m_fboWidth,m_fboHeight);
   m_lightingFBO->bind();
   m_lightingFBO->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
@@ -167,7 +170,7 @@ void NGLScene::initializeGL()
 
 
   ngl::msg->addMessage("Creating m_dofTarget");
-  m_dofTarget=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_dofTarget=FrameBufferObject::create(m_fboWidth,m_fboHeight);
   m_dofTarget->bind();
   m_dofTarget->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                      GLTextureDataType::FLOAT,
@@ -182,10 +185,47 @@ void NGLScene::initializeGL()
   GLuint attachmentsDOF[1] = { GL_COLOR_ATTACHMENT0 };
   glDrawBuffers(1, attachmentsDOF);
 
+///
+
+  ngl::msg->addMessage("Creating final render");
+  m_finalRender=FrameBufferObject::create(m_fboWidth,m_fboHeight);
+  m_finalRender->bind();
+  m_finalRender->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
+                                     GLTextureDataType::FLOAT,
+                                     GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
+                                     GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
+
+  m_finalRender->addDepthBuffer(GLTextureDepthFormats::DEPTH_COMPONENT24,
+                              GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
+                              GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,
+                              true
+                              );
+  GLuint attachmentsFinal[1] = { GL_COLOR_ATTACHMENT0 };
+  glDrawBuffers(1, attachmentsFinal);
+
+///
+
+  ngl::msg->addMessage("Creating ssr FBO");
+  m_ssrFBO=FrameBufferObject::create(m_fboWidth,m_fboHeight);
+  m_ssrFBO->bind();
+  m_ssrFBO->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
+                                     GLTextureDataType::FLOAT,
+                                     GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
+                                     GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,true);
+
+  m_ssrFBO->addDepthBuffer(GLTextureDepthFormats::DEPTH_COMPONENT24,
+                              GLTextureMinFilter::NEAREST,GLTextureMagFilter::NEAREST,
+                              GLTextureWrap::CLAMP_TO_EDGE,GLTextureWrap::CLAMP_TO_EDGE,
+                              true
+                              );
+  GLuint attachmentsSSR[1] = { GL_COLOR_ATTACHMENT0 };
+  glDrawBuffers(1, attachmentsSSR);
+///
+
 
   ngl::msg->addMessage("Creating m_forwardPass");
 
-  m_forwardPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_forwardPass=FrameBufferObject::create(m_fboWidth,m_fboHeight);
   m_forwardPass->bind();
   m_forwardPass->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
@@ -215,7 +255,7 @@ void NGLScene::initializeGL()
   }
 
 
-  m_ssaoPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_ssaoPass=FrameBufferObject::create(m_fboWidth,m_fboHeight);
   m_ssaoPass->bind();
   m_ssaoPass->addColourAttachment("ssao",GLAttatchment::_0,GLTextureFormat::RED,GLTextureInternalFormat::RED,
                                    GLTextureDataType::FLOAT,
@@ -236,7 +276,7 @@ void NGLScene::initializeGL()
 
 
 
-  m_dofPass=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+  m_dofPass=FrameBufferObject::create(m_fboWidth,m_fboHeight);
   m_dofPass->bind();
   m_dofPass->addColourAttachment("blurTarget",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                    GLTextureDataType::FLOAT,
@@ -253,7 +293,7 @@ void NGLScene::initializeGL()
   ngl::msg->addMessage("Creating PingPoing");
   for(auto &b : m_pingPongBuffer)
   {
-    b=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
+    b=FrameBufferObject::create(m_fboWidth,m_fboHeight);
     b->bind();
     b->addColourAttachment("fragColour",GLAttatchment::_0,GLTextureFormat::RGBA,GLTextureInternalFormat::RGBA16F,
                                      GLTextureDataType::FLOAT,
@@ -358,6 +398,32 @@ void NGLScene::createAnimationTBO()
 
 }
 
+void NGLScene::ssrPass()
+{
+  m_ssrFBO->bind();
+  glClear(/*L_COLOR_BUFFER_BIT |*/ GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_fboWidth,m_fboHeight);//m_win.width,m_win.height);
+
+  auto shader = ngl::ShaderLib::instance();
+  shader->use("SSRShader");
+  shader->setUniform("positionSampler",0);
+  shader->setUniform("normalSampler",1);
+  shader->setUniform("albedoMetallicSampler",2);
+  shader->setUniform("projection",m_cam.getProjection());
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("position"));
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("albedoMetallic"));
+  m_screenQuad->bind();
+  m_screenQuad->draw();
+  m_screenQuad->unbind();
+  m_ssrFBO->unbind();
+
+
+}
 
 void NGLScene::animationPass()
 {
@@ -584,7 +650,8 @@ void NGLScene::createSSAOKernel()
 
   auto *shader=ngl::ShaderLib::instance();
   shader->use(SSAOPassShader);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+ // shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  shader->setUniform("screenResolution",ngl::Vec2(m_fboWidth,m_fboHeight));
 
   // Send kernel + rotation
   for (unsigned int i = 0; i < 64; ++i)
@@ -600,7 +667,9 @@ void NGLScene::loadDOFUniforms()
 
   float magnification = m_focalLenght / abs(m_focalDistance - m_focalLenght);
   float blur = m_focalLenght * magnification / m_fstop;
-  float ppm = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
+//  float ppm = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
+  float ppm = sqrtf(m_fboWidth * m_fboWidth + m_fboHeight * m_fboHeight) / 35;
+
   struct dofUBO
   {
       ngl::Vec4 fbPPM;
@@ -613,8 +682,8 @@ void NGLScene::loadDOFUniforms()
   dof.fbPPM.m_z=ppm;
   dof.drSR.m_x=0.1f;
   dof.drSR.m_y=50.0f;
-  dof.drSR.m_z=m_win.width;
-  dof.drSR.m_w=m_win.height;
+  dof.drSR.m_z=m_fboWidth;
+  dof.drSR.m_w=m_fboHeight;
 
   shader->setUniformBuffer("dofUBO",sizeof(dofUBO),&dof.fbPPM);
 
@@ -678,7 +747,7 @@ void NGLScene::geometryPass()
   // now animation
   if(m_showBob==true)
     animationPass();
-  // now floort
+  // now floor
   shader->use(GeometryPassCheckerShader);
   shader->setUniform("normalMapSampler",0);
   glActiveTexture(GL_TEXTURE0);
@@ -698,7 +767,7 @@ void NGLScene::lightingPass()
   m_lightingFBO->bind();
 
   glClear(/*L_COLOR_BUFFER_BIT |*/ GL_DEPTH_BUFFER_BIT);
-  glViewport(0,0,m_win.width,m_win.height);
+  glViewport(0,0,m_fboWidth,m_fboHeight);//m_win.width,m_win.height);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_renderFBO->getTextureID("normal"));
   glActiveTexture(GL_TEXTURE2);
@@ -722,7 +791,8 @@ void NGLScene::forwardPass()
   // copy depth buffer from the deferred render pass to our forward pass
   m_renderFBO->bind(FrameBufferObject::Target::READ);
   m_forwardPass->bind(FrameBufferObject::Target::DRAW);
-  glBlitFramebuffer(0, 0, m_win.width, m_win.height, 0, 0, m_win.width, m_win.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+  glBlitFramebuffer(0, 0, m_fboWidth, m_fboHeight, 0, 0, m_fboWidth, m_fboHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
   // now the textures
   FrameBufferObject::copyFrameBufferTexture(m_lightingFBO->getTextureID("fragColour"),
                                             m_forwardPass->getTextureID("fragColour"),
@@ -735,18 +805,20 @@ void NGLScene::forwardPass()
   m_forwardPass->bind();
   GLuint attachmentsLighting[2] = { GL_COLOR_ATTACHMENT0 ,GL_COLOR_ATTACHMENT1};
   glDrawBuffers(2, attachmentsLighting);
-
-  shader->use(ColourShader);
-  shader->setUniform("TBO",0);
-  auto *prim=ngl::VAOPrimitives::instance();
-  auto bufferID=prim->getVAOFromName("sphere")->getID();
-  int size=prim->getVAOFromName("sphere")->numIndices();
-  glBindVertexArray(bufferID);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_BUFFER, m_lightTransformTBO);
-  glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,size,m_lights.size());
-  glBindTexture(GL_TEXTURE_BUFFER, 0);
-  glBindVertexArray(0);
+  if(m_showLights==true)
+  {
+    shader->use(ColourShader);
+    shader->setUniform("TBO",0);
+    auto *prim=ngl::VAOPrimitives::instance();
+    auto bufferID=prim->getVAOFromName("sphere")->getID();
+    int size=prim->getVAOFromName("sphere")->numIndices();
+    glBindVertexArray(bufferID);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_BUFFER, m_lightTransformTBO);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,size,m_lights.size());
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
+    glBindVertexArray(0);
+  }
   if(m_particleSystem==true)
   {
     shader->use(ParticleShader);
@@ -836,9 +908,6 @@ void NGLScene::finalPass()
   b.exposure=m_exposure;
   b.gamma=m_gamma;
 
-//  shader->setUniform("bloom", m_useBloom);
-//  shader->setUniform("exposure", m_exposure);
-//  shader->setUniform("gamma",m_gamma);
   shader->setUniformBuffer("BloomParam",sizeof(BloomParam),&b.bloom);
 
   shader->setUniform("scene",0);
@@ -870,19 +939,21 @@ void NGLScene::finalPass()
   shader->setUniform("depthSampler",1);
   shader->setUniform("uTexelOffset",1.0f,0.0f);
   m_screenQuad->draw();
-  glDrawArrays(GL_POINTS, 0, 1);
 
   m_dofPass->unbind();
 
 
-  // Vertical Blur to default FB
-  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
+  // Vertical Blur to final render target.
+  m_finalRender->bind();
   glClear(GL_DEPTH_BUFFER_BIT);
   shader->setUniform("uTexelOffset",0.0f,1.0f);
   shader->setUniform("colourSampler",2);
   glViewport(0, 0, m_win.width, m_win.height);
   m_screenQuad->draw();
   m_screenQuad->unbind();
+  m_finalRender->unbind();
+  debugBlit(m_finalRender->getTextureID("fragColour"));
+
   }
   else
   {
@@ -939,16 +1010,16 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // if in debug mode draw gbuffer values for 2nd pass
   //----------------------------------------------------------------------------------------------------------------------
-  if(m_debugOn==true)
-  {
-    // blit to the default FBO from the geo pass renderbuffer
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER,defaultFramebufferObject());
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO->getID());
-    // bind the colour attachment to read form so we can see all the buffers.
-    glReadBuffer(GL_COLOR_ATTACHMENT0+m_debugAttachment);
-    glBlitFramebuffer(0,0,m_win.width,m_win.height,0,0,m_win.width,m_win.height,GL_COLOR_BUFFER_BIT,GL_NEAREST);
-  }
-  else // do deferred render
+//  if(m_debugOn==true)
+//  {
+//    // blit to the default FBO from the geo pass renderbuffer
+//    glBindFramebuffer(GL_DRAW_FRAMEBUFFER,defaultFramebufferObject());
+//    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO->getID());
+//    // bind the colour attachment to read form so we can see all the buffers.
+//    glReadBuffer(GL_COLOR_ATTACHMENT0+m_debugAttachment);
+//    glBlitFramebuffer(0,0,m_win.width,m_win.height,0,0,m_win.width,m_win.height,GL_COLOR_BUFFER_BIT,GL_NEAREST);
+//  }
+//  else // do deferred render
   {
     m_screenQuad->bind();
     {
@@ -967,7 +1038,6 @@ void NGLScene::paintGL()
       m_lightingPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
     }
 
-
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       forwardPass();
@@ -982,6 +1052,7 @@ void NGLScene::paintGL()
       m_bloomBlurPassDuration=std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
       //ngl::msg->addMessage(fmt::format("Bloom blur Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
+    ssrPass();
 
     {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -991,11 +1062,11 @@ void NGLScene::paintGL()
       //ngl::msg->addMessage(fmt::format("Final Pass took {0} uS", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()));
     }
 
-
     if(m_textureDebug==true)
     {
       setTitle(fmt::format("Debug Texture id {0}",m_debugTextureID).c_str());
       debugBlit(m_debugTextureID);
+      //debugBlit(m_ssrFBO->getTextureID("fragColour"));
     }
 
 
@@ -1013,11 +1084,9 @@ void NGLScene::createScreenQuad()
 {
   m_screenQuad=ngl::VAOFactory::createVAO(ngl::simpleVAO,GL_POINTS);
   m_screenQuad->bind();
-
- // std::array<GLfloat,12> quad ={{-1.0f,1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,1.0f,1.0f,-1.0f,1.0f, 1.0f}};
   std::array<GLfloat,2> quad={{0,0}};
   m_screenQuad->setData(ngl::AbstractVAO::VertexData(quad.size()*sizeof(GLfloat),quad[0]));
-   m_screenQuad->setVertexAttributePointer(0,2,GL_FLOAT,0,0);
+  m_screenQuad->setVertexAttributePointer(0,2,GL_FLOAT,0,0);
   m_screenQuad->setNumIndices(quad.size());
   m_screenQuad->unbind();
 
@@ -1048,17 +1117,14 @@ void NGLScene::editLightShader()
 void NGLScene::createLights()
 {
 
-
-//  for(float i=0; i<2.0f*static_cast<float>(M_PI); i+=2.0f*static_cast<float>(M_PI)/m_numl)
-
   float circleStep=2.0f*static_cast<float>(M_PI)/m_lights.size();
   auto rng=ngl::Random::instance();
   float i=0.0f;
   for(auto &l : m_lights)
   {
-    float x=cosf(i)*m_lightRadius;
-    float z=sinf(i)*m_lightRadius;
-    float y=m_lightYOffset+sinf(i*m_freq);
+    float x=cosf(ngl::radians(i))*m_lightRadius;
+    float z=sinf(ngl::radians(i))*m_lightRadius;
+    float y=m_lightYOffset+sinf(ngl::radians(i*m_freq));
     l.position.set(x,y,z);//=rng->getRandomVec3()*5.0f;
     l.colour=rng->getRandomColour3()*m_lightMaxIntensity;
     l.colour.clamp(1.0f,m_lightMaxIntensity);
@@ -1277,6 +1343,7 @@ void NGLScene::drawUI()
   ImGui::SliderFloat("Light Radius", &m_lightRadius,0.0f,20.0f);
   ImGui::SliderFloat("Light Y", &m_lightYOffset,-20.0f,20.0f);
   ImGui::Checkbox("Light Random", &m_lightRandom);
+  ImGui::Checkbox("Show Lights", &m_showLights);
   ImGui::Separator();
   if(ImGui::Button("White"))
   {

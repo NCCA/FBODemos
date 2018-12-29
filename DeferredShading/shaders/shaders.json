@@ -65,8 +65,7 @@
         "path" : ["shaders/BloomFragment.glsl"]
 
       }
-    ],
-      "Uniforms" : [{"name" : "screenResolution", "type" : "vec2", "value" :"1024 720"} ]
+    ]
    },
     "ShaderProgram": {
       "name": "SSAOPassShader",
@@ -244,6 +243,28 @@
         ],
           "Uniforms" : [{"name" : "dof.drSR", "type" : "vec4", "value" :"0.1 50.0 1024 720"} ]
 
+       },
+
+    "ShaderProgram": {
+          "name": "SSRShader",
+           "debug" : false,
+        "Shaders"  : [
+            {
+                "type": "Vertex",
+                "name": "SSRVertex",
+                "path" : ["shaders/ScreenQuadVertex.glsl"]
+            },
+            {
+                "type": "Geometry",
+                "name": "SSRGeo",
+                "path" : ["shaders/ScreenQuadGeo.glsl"]
+            },          {
+            "type": "Fragment",
+            "name": "SSRFragment",
+            "path" : ["shaders/SSRFragment.glsl"]
+
+          }
+        ]
        },
 
     "ShaderProgram": {

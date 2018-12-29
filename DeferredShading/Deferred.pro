@@ -18,6 +18,7 @@ CONFIG-=app_bundle
 SOURCES+= $$PWD/src/NGLScene.cpp    \
           $$PWD/src/NGLSceneMouseControls.cpp \
           $$PWD/src/FrameBufferObject.cpp \
+          $$PWD/src/MultiSampleFrameBufferObject.cpp \
           $$PWD/src/TexturePack.cpp \
           $$PWD/src/FirstPersonCamera.cpp \
           $$PWD/src/TextureArray.cpp \
@@ -30,6 +31,7 @@ SOURCES+= $$PWD/src/NGLScene.cpp    \
 # same for the .h files
 HEADERS+= $$PWD/include/NGLScene.h \
           $$PWD/include/FrameBufferObject.h \
+          $$PWD/include/MultiSampleFrameBufferObject.h \
           $$PWD/include/FirstPersonCamera.h \
           $$PWD/include/TextureTypes.h \
           $$PWD/include/TextureArray.h \

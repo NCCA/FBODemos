@@ -50,7 +50,7 @@ vec3 getNormalFromMap(in vec3 WorldPos,in vec3 Normal,in vec2 uv,in float layer)
 
 void main()
 {
-  float layer=0;//vertexIn.texID;
+  float layer=5;//vertexIn.texID;
   // store the fragment position vector in the first gbuffer texture
   position = vertexIn.fragPos;
   positionVS=vertexIn.fragVS;
