@@ -122,6 +122,9 @@ private:
     void createFramebufferObject();
     // num samples to use multisampleing
     int m_numSamples=4;
+    GLuint m_subroutines[2];
+    int m_activeSubroutine=0;
+    GLuint m_renderFBO;
 
 
 };

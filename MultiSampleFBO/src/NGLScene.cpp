@@ -22,8 +22,8 @@ NGLScene::~NGLScene()
   glDeleteFramebuffers(1,&m_fboID);
 }
 
-const static int TEXTURE_WIDTH=1024;
-const static int TEXTURE_HEIGHT=1024;
+const static int TEXTURE_WIDTH=1024*2;
+const static int TEXTURE_HEIGHT=1024*2;
 void NGLScene::createTextureObject()
 {
   // create a texture object
@@ -34,7 +34,6 @@ void NGLScene::createTextureObject()
   // set params
   glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  //glGenerateMipmapEXT(GL_TEXTURE_2D);  // set the data size but just set the buffer to 0 as we will fill it with the FBO
   glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_numSamples, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, true);
   // now turn the texture off for now
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
@@ -90,7 +89,7 @@ void NGLScene::initializeGL()
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
   ngl::NGLInit::instance();
-
+  glEnable(GL_MULTISAMPLE);
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
@@ -157,6 +156,11 @@ void NGLScene::initializeGL()
   shader->linkProgramObject("TextureShader");
   (*shader)["TextureShader"]->use();
   shader->setUniform("numSamples",m_numSamples);
+  GLuint id=shader->getProgramID("TextureShader");
+
+  m_subroutines[0] = glGetSubroutineIndex(id, GL_FRAGMENT_SHADER, "getMultiSampleTexture");
+  m_subroutines[1] = glGetSubroutineIndex(id, GL_FRAGMENT_SHADER, "getMultiSampleTexture2");
+
   // now create our texture object
   createTextureObject();
   // now the fbo
@@ -201,6 +205,7 @@ void NGLScene::paintGL()
   // grab an instance of the shader manager
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   (*shader)["Phong"]->use();
+  glEnable(GL_MULTISAMPLE);
 
   // Rotation based on the mouse position for our global transform
   ngl::Mat4 rotX;
@@ -230,28 +235,35 @@ void NGLScene::paintGL()
   glViewport(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
   // rotate the teapot
   m_transform.reset();
-
+  m_transform.setScale(1.8f,1.8f,1.8f);
   m_transform.setRotation(rot,rot,rot);
   loadMatricesToShader();
   prim->draw("teapot");
-  rot+=0.5;
+  rot+=0.1;
 
   //----------------------------------------------------------------------------------------------------------------------
   // now we are going to draw to the normal GL buffer and use the texture created
   // in the previous render to draw to our objects
   //----------------------------------------------------------------------------------------------------------------------
   // first bind the normal render buffer
+
   glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
   // now enable the texture we just rendered to
+  glDisable(GL_MULTISAMPLE);
+
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_textureID);
-  // do any mipmap generation
-  glGenerateMipmap(GL_TEXTURE_2D_MULTISAMPLE);
   // set the screen for a different clear colour
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // clear this screen
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // get the new shader and set the new viewport size
   shader->use("TextureShader");
+  GLsizei numActiveUniforms;
+
+  glGetProgramStageiv(shader->getProgramID("TextureShader"), GL_FRAGMENT_SHADER,
+             GL_ACTIVE_SUBROUTINE_UNIFORM_LOCATIONS, &numActiveUniforms);
+  glUniformSubroutinesuiv(GL_FRAGMENT_SHADER,numActiveUniforms,&m_subroutines[m_activeSubroutine]);
+
   // this takes into account retina displays etc
   glViewport(0, 0, static_cast<GLsizei>(width() * devicePixelRatio()), static_cast<GLsizei>(height() * devicePixelRatio()));
   ngl::Mat4 MVP;
@@ -264,7 +276,15 @@ void NGLScene::paintGL()
   shader->setUniform("MVP",MVP);
   prim->draw("sphere");
   //----------------------------------------------------------------------------------------------------------------------
- }
+
+
+//  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());   // Make sure no FBO is set as the draw framebuffer
+//  glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderFBO); // Make sure your multisampled FBO is the read framebuffer
+//  glDrawBuffer(GL_BACK);                       // Set the back buffer as the draw buffer
+//  glBlitFramebuffer(0, 0, m_win.width, m_win.height, 0, 0, m_win.width, m_win.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+
+}
 
 
 
@@ -287,6 +307,10 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_F : showFullScreen(); break;
   // show windowed
   case Qt::Key_N : showNormal(); break;
+
+  case Qt::Key_1 : m_activeSubroutine=0; break;
+  case Qt::Key_2 : m_activeSubroutine=1; break;
+
   default : break;
   }
   // finally update the GLWindow and re-draw
