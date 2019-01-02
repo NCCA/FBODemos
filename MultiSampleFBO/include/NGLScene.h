@@ -25,7 +25,7 @@ class NGLScene : public QOpenGLWindow
     /// @brief ctor for our NGL drawing class
     /// @param [in] parent the parent window to the class
     //----------------------------------------------------------------------------------------------------------------------
-    NGLScene();
+    NGLScene(int _numSamples);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief dtor must close down ngl and release OpenGL resources
     //----------------------------------------------------------------------------------------------------------------------
@@ -120,6 +120,8 @@ private:
     /// @brief create  the FBO
     //----------------------------------------------------------------------------------------------------------------------
     void createFramebufferObject();
+    // num samples to use multisampleing
+    int m_numSamples=4;
 
 
 };

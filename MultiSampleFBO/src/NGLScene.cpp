@@ -6,11 +6,12 @@
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
 
-NGLScene::NGLScene()
+NGLScene::NGLScene(int _numSamples)
 {
   setTitle("Multisample Framebuffer Object Demo");
   m_win.width=width();
   m_win.height=height();
+  m_numSamples=_numSamples;
 }
 
 NGLScene::~NGLScene()
@@ -23,7 +24,6 @@ NGLScene::~NGLScene()
 
 const static int TEXTURE_WIDTH=1024;
 const static int TEXTURE_HEIGHT=1024;
-const static int s_numSamples=8;
 void NGLScene::createTextureObject()
 {
   // create a texture object
@@ -35,7 +35,7 @@ void NGLScene::createTextureObject()
   glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   //glGenerateMipmapEXT(GL_TEXTURE_2D);  // set the data size but just set the buffer to 0 as we will fill it with the FBO
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, s_numSamples, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, true);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_numSamples, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, true);
   // now turn the texture off for now
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 }
@@ -50,7 +50,7 @@ void NGLScene::createFramebufferObject()
   glGenRenderbuffers(1, &rboID);
   glBindRenderbuffer(GL_RENDERBUFFER, rboID);
 
-  glRenderbufferStorageMultisample( GL_RENDERBUFFER, s_numSamples, GL_DEPTH_COMPONENT, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+  glRenderbufferStorageMultisample( GL_RENDERBUFFER, m_numSamples, GL_DEPTH_COMPONENT, TEXTURE_WIDTH, TEXTURE_HEIGHT);
   // bind
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
@@ -156,7 +156,7 @@ void NGLScene::initializeGL()
   // link the shader no attributes are bound
   shader->linkProgramObject("TextureShader");
   (*shader)["TextureShader"]->use();
-  shader->setUniform("numSamples",s_numSamples);
+  shader->setUniform("numSamples",m_numSamples);
   // now create our texture object
   createTextureObject();
   // now the fbo
@@ -168,7 +168,6 @@ void NGLScene::initializeGL()
   startTimer(1);
   GLint maxAttach = 0;
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
-  glEnable(GL_MULTISAMPLE);
   glGetIntegerv(GL_MAX_SAMPLES,&maxAttach);
   ngl::msg->addMessage(fmt::format("Max Samples {0}",maxAttach));
 

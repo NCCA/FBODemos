@@ -10,11 +10,14 @@ basic OpenGL demo modified from http://qt-project.org/doc/qt-5.0/qtgui/openglwin
 int main(int argc, char **argv)
 {
   QGuiApplication app(argc, argv);
+  int numSamples=4;
+  if(argc >1)
+    numSamples=std::atoi(argv[1]);
   // create an OpenGL format specifier
   QSurfaceFormat format;
   // set the number of samples for multisampling
   // will need to enable glEnable(GL_MULTISAMPLE); once we have a context
-  format.setSamples(8);
+  format.setSamples(numSamples);
   #if defined(__APPLE__)
     // at present mac osx Mountain Lion only supports GL3.2
     // the new mavericks will have GL 4.x so can change
@@ -30,7 +33,7 @@ int main(int argc, char **argv)
   // now set the depth buffer to 24 bits
   format.setDepthBufferSize(24);
   // now we are going to create our scene window
-  NGLScene window;
+  NGLScene window(numSamples);
   // and set the OpenGL format
   window.setFormat(format);
   // we can now query the version to see if it worked
