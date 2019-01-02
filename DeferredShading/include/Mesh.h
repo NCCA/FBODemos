@@ -47,15 +47,15 @@ public :
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief accessor for the number of bones in the mesh
   //----------------------------------------------------------------------------------------------------------------------
-  inline unsigned int numBones() const { return m_numBones;}
+  unsigned int numBones() const { return m_numBones;}
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief accessor for the time in seconds of the animation
   //----------------------------------------------------------------------------------------------------------------------
-  inline double getDuration() const { return m_scene->mAnimations[0]->mDuration;}
+  double getDuration() const { return m_scene->mAnimations[0]->mDuration;}
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief how many tick in the animation per second
   //----------------------------------------------------------------------------------------------------------------------
-  inline double getTicksPerSec() const { return m_scene->mAnimations[0]->mTicksPerSecond;}
+  double getTicksPerSec() const { return m_scene->mAnimations[0]->mTicksPerSecond;}
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief this set the bone transformation for the current time. This is then passed to the shader
   /// to do the animation of the mesh
@@ -63,6 +63,8 @@ public :
   /// @param[out] _transforms an array of transform matrices for the current frame
   //----------------------------------------------------------------------------------------------------------------------
   void boneTransform(float _timeInSeconds, std::vector<ngl::Mat4>& o_transforms);
+
+  void setActiveAnimation(int _anim);
 
 private :
 
@@ -161,6 +163,15 @@ private :
   /// @brief number of bones in the mesh
   //----------------------------------------------------------------------------------------------------------------------
   unsigned int m_numBones;
+  //----------------------------------------------------------------------------------------------------------------------
+  /// @brief number of animations in the scene
+  //----------------------------------------------------------------------------------------------------------------------
+  unsigned int m_numAnimations=1;
+  //----------------------------------------------------------------------------------------------------------------------
+  /// @brief number of active animation in the scene
+  //----------------------------------------------------------------------------------------------------------------------
+  unsigned int m_activeAnimations=0;
+
   //----------------------------------------------------------------------------------------------------------------------
   /// @brief array of bone information
   //----------------------------------------------------------------------------------------------------------------------
