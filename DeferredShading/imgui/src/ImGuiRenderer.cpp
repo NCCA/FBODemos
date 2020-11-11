@@ -113,10 +113,9 @@ void ImGuiRenderer::renderDrawList(ImDrawData *draw_data)
          0.0f,                  0.0f,                  -1.0f, 0.0f ,
         -1.0f,                  1.0f,                   0.0f, 1.0f
     );
-    ngl::ShaderLib *shader = ngl::ShaderLib::instance();
-    shader->use(ImGUIShader);
-    shader->setUniform("Texture",0);
-    shader->setUniform("ProjMtx",ortho_projection);
+    ngl::ShaderLib::use(ImGUIShader);
+    ngl::ShaderLib::setUniform("Texture",0);
+    ngl::ShaderLib::setUniform("ProjMtx",ortho_projection);
     std::unique_ptr<ngl::AbstractVAO> vao;
     vao=ngl::VAOFactory::createVAO(ngl::simpleIndexVAO,GL_TRIANGLES);
 
@@ -204,8 +203,7 @@ bool ImGuiRenderer::createDeviceObjects()
   glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
   glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
   glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->loadShader(ImGUIShader,"shaders/imguiVertex.glsl","shaders/imguiFragment.glsl");
+  ngl::ShaderLib::loadShader(ImGUIShader,"shaders/imguiVertex.glsl","shaders/imguiFragment.glsl");
 
   createFontsTexture();
   // Restore modified GL state

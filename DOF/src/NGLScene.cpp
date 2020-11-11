@@ -34,17 +34,16 @@ auto DOFShader="DOFShader";
 
 void NGLScene::loadDOFUniforms()
 {
-  auto shader=ngl::ShaderLib::instance();
-  shader->use(DOFShader);
+  ngl::ShaderLib::use(DOFShader);
 
   float magnification = m_focalLenght / abs(m_focalDistance - m_focalLenght);
   float blur = m_focalLenght * magnification / m_fstop;
   float ppm = sqrtf(m_win.width * m_win.width + m_win.height * m_win.height) / 35;
-  shader->setUniform("depthRange",ngl::Vec2(0.1f,50.0f));
-  shader->setUniform("blurCoefficient",blur);
-  shader->setUniform("PPM",ppm);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
-  shader->setUniform("focusDistance",m_focusDistance);
+  ngl::ShaderLib::setUniform("depthRange",ngl::Vec2(0.1f,50.0f));
+  ngl::ShaderLib::setUniform("blurCoefficient",blur);
+  ngl::ShaderLib::setUniform("PPM",ppm);
+  ngl::ShaderLib::setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  ngl::ShaderLib::setUniform("focusDistance",m_focusDistance);
 
 }
 
@@ -52,7 +51,7 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
 
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
@@ -72,34 +71,31 @@ void NGLScene::initializeGL()
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
   m_project=ngl::perspective(45.0f,720.0f/576.0f,0.05f,10.0f);
-  // now to load the shader and set the values
-  // grab an instance of shader manager
-  auto *shader=ngl::ShaderLib::instance();
   // we are creating a shader called Phong
-  shader->loadShader("Phong","shaders/PhongVert.glsl","shaders/PhongFrag.glsl");
+  ngl::ShaderLib::loadShader("Phong","shaders/PhongVert.glsl","shaders/PhongFrag.glsl");
   // and make it active ready to load values
-  (*shader)["Phong"]->use();
+  ngl::ShaderLib::use("Phong");
   ngl::Vec4 lightPos(-2.0f,5.0f,2.0f,0.0f);
-  shader->setUniform("light.position",lightPos);
-  shader->setUniform("light.ambient",0.0f,0.0f,0.0f,1.0f);
-  shader->setUniform("light.diffuse",1.0f,1.0f,1.0f,1.0f);
-  shader->setUniform("light.specular",0.8f,0.8f,0.8f,1.0f);
+  ngl::ShaderLib::setUniform("light.position",lightPos);
+  ngl::ShaderLib::setUniform("light.ambient",0.0f,0.0f,0.0f,1.0f);
+  ngl::ShaderLib::setUniform("light.diffuse",1.0f,1.0f,1.0f,1.0f);
+  ngl::ShaderLib::setUniform("light.specular",0.8f,0.8f,0.8f,1.0f);
   // gold like phong material
-  shader->setUniform("material.ambient",0.274725f,0.1995f,0.0745f,0.0f);
-  shader->setUniform("material.diffuse",0.75164f,0.60648f,0.22648f,0.0f);
-  shader->setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
-  shader->setUniform("material.shininess",51.2f);
-  shader->setUniform("viewerPos",from);
-  ngl::VAOPrimitives::instance()->createTrianglePlane("floor",20,20,1,1,ngl::Vec3::up());
-  shader->use(ngl::nglCheckerShader);
-  shader->setUniform("lightDiffuse",1.0f,1.0f,1.0f,1.0f);
-  shader->setUniform("checkOn",true);
-  shader->setUniform("lightPos",lightPos.toVec3());
-  shader->setUniform("colour1",0.9f,0.9f,0.9f,1.0f);
-  shader->setUniform("colour2",0.6f,0.6f,0.6f,1.0f);
-  shader->setUniform("checkSize",60.0f);
+  ngl::ShaderLib::setUniform("material.ambient",0.274725f,0.1995f,0.0745f,0.0f);
+  ngl::ShaderLib::setUniform("material.diffuse",0.75164f,0.60648f,0.22648f,0.0f);
+  ngl::ShaderLib::setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
+  ngl::ShaderLib::setUniform("material.shininess",51.2f);
+  ngl::ShaderLib::setUniform("viewerPos",from);
+  ngl::VAOPrimitives::createTrianglePlane("floor",20,20,1,1,ngl::Vec3::up());
+  ngl::ShaderLib::use(ngl::nglCheckerShader);
+  ngl::ShaderLib::setUniform("lightDiffuse",1.0f,1.0f,1.0f,1.0f);
+  ngl::ShaderLib::setUniform("checkOn",true);
+  ngl::ShaderLib::setUniform("lightPos",lightPos.toVec3());
+  ngl::ShaderLib::setUniform("colour1",0.9f,0.9f,0.9f,1.0f);
+  ngl::ShaderLib::setUniform("colour2",0.6f,0.6f,0.6f,1.0f);
+  ngl::ShaderLib::setUniform("checkSize",60.0f);
 
-  shader->loadShader(DOFShader,"shaders/DOFVertex.glsl","shaders/DOFFragment.glsl");
+  ngl::ShaderLib::loadShader(DOFShader,"shaders/DOFVertex.glsl","shaders/DOFFragment.glsl");
   loadDOFUniforms();
   m_renderFBO=FrameBufferObject::create(1024*devicePixelRatio(),720*devicePixelRatio());
   m_renderFBO->bind();
@@ -134,9 +130,8 @@ void NGLScene::initializeGL()
   createScreenQuad();
 
   // now create the primitives to draw
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-  prim->createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
-  prim->createSphere("sphere",0.4f,80);
+  ngl::VAOPrimitives::createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
+  ngl::VAOPrimitives::createSphere("sphere",0.4f,80);
   startTimer(1);
   GLint maxAttach = 0;
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
@@ -151,17 +146,11 @@ void NGLScene::initializeGL()
 
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, m_blurFBO->getTextureID("blurTarget"));
-
-
-
-
 }
 
 
 void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-
   ngl::Mat4 MV;
   ngl::Mat4  MVP;
   ngl::Mat3 normalMatrix;
@@ -171,10 +160,10 @@ void NGLScene::loadMatricesToShader(const ngl::Mat4 &_mouse)
   MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
-  shader->setUniform("MV",MV);
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("M",M);
+  ngl::ShaderLib::setUniform("MV",MV);
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
+  ngl::ShaderLib::setUniform("M",M);
 }
 
 void NGLScene::paintGL()
@@ -182,9 +171,7 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // draw to our FBO first
   //----------------------------------------------------------------------------------------------------------------------
-  // grab an instance of the shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["Phong"]->use();
+  ngl::ShaderLib::use("Phong");
   // set the background colour (using blue to show it up)
 
   // Rotation based on the mouse position for our global transform
@@ -201,8 +188,6 @@ void NGLScene::paintGL()
   m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
 
 
-   // get the VBO instance and draw the built in teapot
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   //----------------------------------------------------------------------------------------------------------------------
   // Pass 1
   // we are now going to draw to our FBO
@@ -225,19 +210,19 @@ void NGLScene::paintGL()
       m_transform.setRotation(0,s_rot,0);
       m_transform.setPosition(x,0.0f,z);
       loadMatricesToShader(m_mouseGlobalTX);
-      prim->draw("teapot");
+      ngl::VAOPrimitives::draw("teapot");
     }
   }
   s_rot+=1.0f;
-  shader->use(ngl::nglCheckerShader);
+  ngl::ShaderLib::use(ngl::nglCheckerShader);
   m_transform.reset();
   m_transform.setPosition(0.0f,-0.45f,0.0f);
   ngl::Mat4 MVP=m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
   ngl::Mat3 normalMatrix=m_view*m_mouseGlobalTX;
   normalMatrix.inverse().transpose();
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
-  prim->draw("floor");
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
+  ngl::VAOPrimitives::draw("floor");
 
   m_renderFBO->unbind();
 
@@ -250,23 +235,23 @@ void NGLScene::paintGL()
   m_blurFBO->bind();
   m_screenQuad->bind();
 
-  shader->use(DOFShader);
+  ngl::ShaderLib::use(DOFShader);
 
   loadDOFUniforms();
   m_blurFBO->setViewport();
   // HORIZONTAL BLUR
-  shader->setUniform("colourSampler",0);
-  shader->setUniform("depthSampler",1);
-  shader->setUniform("uTexelOffset",1.0f,0.0f);
+  ngl::ShaderLib::setUniform("colourSampler",0);
+  ngl::ShaderLib::setUniform("depthSampler",1);
+  ngl::ShaderLib::setUniform("uTexelOffset",1.0f,0.0f);
   m_screenQuad->draw();
   m_blurFBO->unbind();
   // Vertical Blur to default FB
   glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
   glClear(GL_DEPTH_BUFFER_BIT);
-  shader->setUniform("uTexelOffset",0.0f,1.0f);
-  shader->setUniform("colourSampler",2);
+  ngl::ShaderLib::setUniform("uTexelOffset",0.0f,1.0f);
+  ngl::ShaderLib::setUniform("colourSampler",2);
   glViewport(0, 0, m_win.width, m_win.height);
-  shader->setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
+  ngl::ShaderLib::setUniform("screenResolution",ngl::Vec2(m_win.width,m_win.height));
   m_screenQuad->draw();
   m_screenQuad->unbind();
 

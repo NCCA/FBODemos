@@ -1,4 +1,0 @@
-/Users/jmacey/NGL7Demos/FBODemos/DeferredShading/CMakeFiles/rebuild_cache.dir
-/Users/jmacey/NGL7Demos/FBODemos/DeferredShading/CMakeFiles/edit_cache.dir
-/Users/jmacey/NGL7Demos/FBODemos/DeferredShading/CMakeFiles/DeferredRenderer.dir
-/Users/jmacey/NGL7Demos/FBODemos/DeferredShading/CMakeFiles/DeferredRenderer_autogen.dir

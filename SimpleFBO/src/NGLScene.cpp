@@ -78,7 +78,7 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
 
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
@@ -95,65 +95,61 @@ void NGLScene::initializeGL()
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
   m_project=ngl::perspective(45.0f,720.0f/576.0f,0.05f,350.0f);
-  // now to load the shader and set the values
-  // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   // we are creating a shader called Phong
-  shader->createShaderProgram("Phong");
+  ngl::ShaderLib::createShaderProgram("Phong");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("PhongVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("PhongFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::attachShader("PhongVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("PhongFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
-  shader->loadShaderSource("PhongVertex","shaders/PhongVert.glsl");
-  shader->loadShaderSource("PhongFragment","shaders/PhongFrag.glsl");
+  ngl::ShaderLib::loadShaderSource("PhongVertex","shaders/PhongVert.glsl");
+  ngl::ShaderLib::loadShaderSource("PhongFragment","shaders/PhongFrag.glsl");
   // compile the shaders
-  shader->compileShader("PhongVertex");
-  shader->compileShader("PhongFragment");
+  ngl::ShaderLib::compileShader("PhongVertex");
+  ngl::ShaderLib::compileShader("PhongFragment");
   // add them to the program
-  shader->attachShaderToProgram("Phong","PhongVertex");
-  shader->attachShaderToProgram("Phong","PhongFragment");
+  ngl::ShaderLib::attachShaderToProgram("Phong","PhongVertex");
+  ngl::ShaderLib::attachShaderToProgram("Phong","PhongFragment");
 
   // now we have associated this data we can link the shader
-  shader->linkProgramObject("Phong");
+  ngl::ShaderLib::linkProgramObject("Phong");
   // and make it active ready to load values
-  (*shader)["Phong"]->use();
+  ngl::ShaderLib::use("Phong");
   ngl::Vec4 lightPos(-2.0f,5.0f,2.0f,0.0f);
-  shader->setUniform("light.position",lightPos);
-  shader->setUniform("light.ambient",0.0f,0.0f,0.0f,1.0f);
-  shader->setUniform("light.diffuse",1.0f,1.0f,1.0f,1.0f);
-  shader->setUniform("light.specular",0.8f,0.8f,0.8f,1.0f);
+  ngl::ShaderLib::setUniform("light.position",lightPos);
+  ngl::ShaderLib::setUniform("light.ambient",0.0f,0.0f,0.0f,1.0f);
+  ngl::ShaderLib::setUniform("light.diffuse",1.0f,1.0f,1.0f,1.0f);
+  ngl::ShaderLib::setUniform("light.specular",0.8f,0.8f,0.8f,1.0f);
   // gold like phong material
-  shader->setUniform("material.ambient",0.274725f,0.1995f,0.0745f,0.0f);
-  shader->setUniform("material.diffuse",0.75164f,0.60648f,0.22648f,0.0f);
-  shader->setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
-  shader->setUniform("material.shininess",51.2f);
-  shader->setUniform("viewerPos",from);
+  ngl::ShaderLib::setUniform("material.ambient",0.274725f,0.1995f,0.0745f,0.0f);
+  ngl::ShaderLib::setUniform("material.diffuse",0.75164f,0.60648f,0.22648f,0.0f);
+  ngl::ShaderLib::setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
+  ngl::ShaderLib::setUniform("material.shininess",51.2f);
+  ngl::ShaderLib::setUniform("viewerPos",from);
 
   // now load our texture shader
-  shader->createShaderProgram("TextureShader");
+  ngl::ShaderLib::createShaderProgram("TextureShader");
 
-  shader->attachShader("TextureVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
-  shader->loadShaderSource("TextureVertex","shaders/TextureVertex.glsl");
-  shader->loadShaderSource("TextureFragment","shaders/TextureFragment.glsl");
+  ngl::ShaderLib::attachShader("TextureVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::loadShaderSource("TextureVertex","shaders/TextureVertex.glsl");
+  ngl::ShaderLib::loadShaderSource("TextureFragment","shaders/TextureFragment.glsl");
 
-  shader->compileShader("TextureVertex");
-  shader->compileShader("TextureFragment");
-  shader->attachShaderToProgram("TextureShader","TextureVertex");
-  shader->attachShaderToProgram("TextureShader","TextureFragment");
+  ngl::ShaderLib::compileShader("TextureVertex");
+  ngl::ShaderLib::compileShader("TextureFragment");
+  ngl::ShaderLib::attachShaderToProgram("TextureShader","TextureVertex");
+  ngl::ShaderLib::attachShaderToProgram("TextureShader","TextureFragment");
 
   // link the shader no attributes are bound
-  shader->linkProgramObject("TextureShader");
-  (*shader)["TextureShader"]->use();
+  ngl::ShaderLib::linkProgramObject("TextureShader");
+  ngl::ShaderLib::use("TextureShader");
 
   // now create our texture object
   createTextureObject();
   // now the fbo
   createFramebufferObject();
   // now create the primitives to draw
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-  prim->createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
-  prim->createSphere("sphere",0.4f,80);
+  ngl::VAOPrimitives::createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
+  ngl::VAOPrimitives::createSphere("sphere",0.4f,80);
   startTimer(1);
   GLint maxAttach = 0;
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
@@ -163,8 +159,6 @@ void NGLScene::initializeGL()
 
 void NGLScene::loadMatricesToShader()
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
   ngl::Mat3 normalMatrix;
@@ -174,10 +168,10 @@ void NGLScene::loadMatricesToShader()
   MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
-  shader->setUniform("MV",MV);
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("M",M);
+  ngl::ShaderLib::setUniform("MV",MV);
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
+  ngl::ShaderLib::setUniform("M",M);
 }
 
 void NGLScene::paintGL()
@@ -186,8 +180,7 @@ void NGLScene::paintGL()
   // draw to our FBO first
   //----------------------------------------------------------------------------------------------------------------------
   // grab an instance of the shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["Phong"]->use();
+  ngl::ShaderLib::use("Phong");
 
   // Rotation based on the mouse position for our global transform
   ngl::Mat4 rotX;
@@ -204,8 +197,6 @@ void NGLScene::paintGL()
 
 
   static float rot=0.0;
-   // get the VBO instance and draw the built in teapot
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   // we are now going to draw to our FBO
   // set the rendering destination to FBO
   glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
@@ -220,7 +211,7 @@ void NGLScene::paintGL()
 
   m_transform.setRotation(rot,rot,rot);
   loadMatricesToShader();
-  prim->draw("teapot");
+  ngl::VAOPrimitives::draw("teapot");
   rot+=0.5;
 
   //----------------------------------------------------------------------------------------------------------------------
@@ -238,18 +229,18 @@ void NGLScene::paintGL()
   // clear this screen
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // get the new shader and set the new viewport size
-  shader->use("TextureShader");
+  ngl::ShaderLib::use("TextureShader");
   // this takes into account retina displays etc
   glViewport(0, 0, static_cast<GLsizei>(width() * devicePixelRatio()), static_cast<GLsizei>(height() * devicePixelRatio()));
   ngl::Mat4 MVP;
   m_transform.reset();
   MVP= m_project*m_view*m_mouseGlobalTX;
-  shader->setUniform("MVP",MVP);
-  prim->draw("plane");
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::VAOPrimitives::draw("plane");
   m_transform.setPosition(0,1,0);
   MVP= m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
-  shader->setUniform("MVP",MVP);
-  prim->draw("sphere");
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::VAOPrimitives::draw("sphere");
   //----------------------------------------------------------------------------------------------------------------------
  }
 

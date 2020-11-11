@@ -1,8 +1,23 @@
-cmake_minimum_required(VERSION 2.8.11)
-# Name of the project
-set(PROJECT_NAME TextureDemos)
-project(${PROJECT_NAME})
+cmake_minimum_required(VERSION 3.12)
+#-------------------------------------------------------------------------------------------
+# I'm going to use vcpk in most cases for our install of 3rd party libs
+# this is going to check the environment variable for CMAKE_TOOLCHAIN_FILE and this must point to where
+# vcpkg.cmake is in the University this is set in your .bash_profile to
+# export CMAKE_TOOLCHAIN_FILE=/public/devel/2020/vcpkg/scripts/buildsystems/vcpkg.cmake
+#-------------------------------------------------------------------------------------------
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{CMAKE_TOOLCHAIN_FILE})
+   set(CMAKE_TOOLCHAIN_FILE $ENV{CMAKE_TOOLCHAIN_FILE})
+endif()
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/SimpleFBO/ )
-add_subdirectory(${PROJECT_SOURCE_DIR}/Shadows/ )
-add_subdirectory(${PROJECT_SOURCE_DIR}/PCFShadows/ )
+project(FBODemosBuildALL)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/DeferredShading/)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Blit)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Dof)
+add_subdirectory(${PROJECT_SOURCE_DIR}/MultiSampleFBO)
+add_subdirectory(${PROJECT_SOURCE_DIR}/PCFShadows)
+# excluded from build need to update this demo as uing ngl 6!
+#add_subdirectory(${PROJECT_SOURCE_DIR}/PointShadows)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Shadows)
+add_subdirectory(${PROJECT_SOURCE_DIR}/SimpleFBO)
+

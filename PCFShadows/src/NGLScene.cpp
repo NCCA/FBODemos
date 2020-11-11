@@ -8,10 +8,7 @@
 #include <ngl/VAOFactory.h>
 #include <ngl/MultiBufferVAO.h>
 #include <ngl/ShaderLib.h>
-
 #include <array>
-
-
 //----------------------------------------------------------------------------------------------------------------------
 // in this ctor we need to call the CreateCoreGLContext class, this is mainly for the MacOS Lion version as
 // we need to init the OpenGL 3.2 sub-system which is different than other platforms
@@ -57,14 +54,11 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
   // enable multisampling for smoother drawing
   glEnable(GL_MULTISAMPLE);
-  // now to load the shader and set the values
-  // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
@@ -94,72 +88,71 @@ void NGLScene::initializeGL()
   m_lightAngle=0.0f;
 
   // we are creating a shader called Texture
-  shader->createShaderProgram("Texture");
+  ngl::ShaderLib::createShaderProgram("Texture");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("TextureVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::attachShader("TextureVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
-  shader->loadShaderSource("TextureVertex","shaders/TextureVert.glsl");
-  shader->loadShaderSource("TextureFragment","shaders/TextureFrag.glsl");
+  ngl::ShaderLib::loadShaderSource("TextureVertex","shaders/TextureVert.glsl");
+  ngl::ShaderLib::loadShaderSource("TextureFragment","shaders/TextureFrag.glsl");
   // compile the shaders
-  shader->compileShader("TextureVertex");
-  shader->compileShader("TextureFragment");
+  ngl::ShaderLib::compileShader("TextureVertex");
+  ngl::ShaderLib::compileShader("TextureFragment");
   // add them to the program
-  shader->attachShaderToProgram("Texture","TextureVertex");
-  shader->attachShaderToProgram("Texture","TextureFragment");
+  ngl::ShaderLib::attachShaderToProgram("Texture","TextureVertex");
+  ngl::ShaderLib::attachShaderToProgram("Texture","TextureFragment");
   // now bind the shader attributes for most NGL primitives we use the following
   // layout attribute 0 is the vertex data (x,y,z)
-  shader->bindAttribute("Texture",0,"inVert");
+  ngl::ShaderLib::bindAttribute("Texture",0,"inVert");
 
   // now we have associated this data we can link the shader
-  shader->linkProgramObject("Texture");
-  shader->use("Texture");
-  shader->autoRegisterUniforms("Texture");
+  ngl::ShaderLib::linkProgramObject("Texture");
+  ngl::ShaderLib::use("Texture");
+  ngl::ShaderLib::autoRegisterUniforms("Texture");
   // we are creating a shader called Colour
-  shader->createShaderProgram("Colour");
+  ngl::ShaderLib::createShaderProgram("Colour");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("ColourVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("ColourFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::attachShader("ColourVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("ColourFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
-  shader->loadShaderSource("ColourVertex","shaders/ColourVert.glsl");
-  shader->loadShaderSource("ColourFragment","shaders/ColourFrag.glsl");
+  ngl::ShaderLib::loadShaderSource("ColourVertex","shaders/ColourVert.glsl");
+  ngl::ShaderLib::loadShaderSource("ColourFragment","shaders/ColourFrag.glsl");
   // compile the shaders
-  shader->compileShader("ColourVertex");
-  shader->compileShader("ColourFragment");
+  ngl::ShaderLib::compileShader("ColourVertex");
+  ngl::ShaderLib::compileShader("ColourFragment");
   // add them to the program
-  shader->attachShaderToProgram("Colour","ColourVertex");
-  shader->attachShaderToProgram("Colour","ColourFragment");
+  ngl::ShaderLib::attachShaderToProgram("Colour","ColourVertex");
+  ngl::ShaderLib::attachShaderToProgram("Colour","ColourFragment");
 
   // now we have associated this data we can link the shader
-  shader->linkProgramObject("Colour");
-  shader->use("Colour");
-  shader->setUniform("Colour",1.0f,0.0f,0.0f,1.0f);
-  shader->autoRegisterUniforms("Colour");
+  ngl::ShaderLib::linkProgramObject("Colour");
+  ngl::ShaderLib::use("Colour");
+  ngl::ShaderLib::setUniform("Colour",1.0f,0.0f,0.0f,1.0f);
+  ngl::ShaderLib::autoRegisterUniforms("Colour");
   // we are creating a shader called Shadow
-  shader->createShaderProgram("Shadow");
+  ngl::ShaderLib::createShaderProgram("Shadow");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("ShadowVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("ShadowFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::attachShader("ShadowVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("ShadowFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
-  shader->loadShaderSource("ShadowVertex","shaders/ShadowVert.glsl");
-  shader->loadShaderSource("ShadowFragment","shaders/ShadowFrag.glsl");
+  ngl::ShaderLib::loadShaderSource("ShadowVertex","shaders/ShadowVert.glsl");
+  ngl::ShaderLib::loadShaderSource("ShadowFragment","shaders/ShadowFrag.glsl");
   // compile the shaders
-  shader->compileShader("ShadowVertex");
-  shader->compileShader("ShadowFragment");
+  ngl::ShaderLib::compileShader("ShadowVertex");
+  ngl::ShaderLib::compileShader("ShadowFragment");
   // add them to the program
-  shader->attachShaderToProgram("Shadow","ShadowVertex");
-  shader->attachShaderToProgram("Shadow","ShadowFragment");
+  ngl::ShaderLib::attachShaderToProgram("Shadow","ShadowVertex");
+  ngl::ShaderLib::attachShaderToProgram("Shadow","ShadowFragment");
 
   // now we have associated this data we can link the shader
-  shader->linkProgramObject("Shadow");
-  shader->use("Shadow");
-  shader->setUniform("ShadowMap",0);
+  ngl::ShaderLib::linkProgramObject("Shadow");
+  ngl::ShaderLib::use("Shadow");
+  ngl::ShaderLib::setUniform("ShadowMap",0);
   // create the primitives to draw
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-  prim->createSphere("sphere",0.5,50);
-  prim->createTorus("torus",0.15f,0.4f,40,40);
+  ngl::VAOPrimitives::createSphere("sphere",0.5,50);
+  ngl::VAOPrimitives::createTorus("torus",0.15f,0.4f,40,40);
 
-  prim->createTrianglePlane("plane",14,14,80,80,ngl::Vec3(0,1,0));
+  ngl::VAOPrimitives::createTrianglePlane("plane",14,14,80,80,ngl::Vec3(0,1,0));
   // now create our FBO and texture
   createFramebufferObject();
   // we need to enable depth testing
@@ -252,10 +245,8 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // now we draw a cube to visualise the light
   //----------------------------------------------------------------------------------------------------------------------
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-  ngl::ShaderLib *shader = ngl::ShaderLib::instance();
 
-  shader->use("Colour");
+  ngl::ShaderLib::use("Colour");
 
   m_transform.reset();
   m_transform.setPosition(m_lightPosition);
@@ -264,8 +255,8 @@ void NGLScene::paintGL()
                 m_transform.getMatrix();
 
 
-    shader->setUniform("MVP",MVP);
-    prim->draw("cube");
+    ngl::ShaderLib::setUniform("MVP",MVP);
+    ngl::VAOPrimitives::draw("cube");
 }
 
 
@@ -305,9 +296,7 @@ void NGLScene::createFramebufferObject()
 
 void NGLScene::loadMatricesToShadowShader()
 {
-
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->use("Shadow");
+  ngl::ShaderLib::use("Shadow");
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
   ngl::Mat3 normalMatrix;
@@ -317,11 +306,10 @@ void NGLScene::loadMatricesToShadowShader()
   MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
-  shader->setUniform("MV",MV);
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("LightPosition",m_lightPosition.m_x,m_lightPosition.m_y,m_lightPosition.m_z);
-  shader->setUniform("inColour",m_colour.m_r,m_colour.m_g,m_colour.m_b,1.0f);
+  ngl::ShaderLib::setUniform("MV",MV);
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
+  ngl::ShaderLib::setUniform("inColour",m_colour.m_r,m_colour.m_g,m_colour.m_b,1.0f);
 
   // x = x* 0.5 + 0.5
   // y = y* 0.5 + 0.5
@@ -337,16 +325,15 @@ void NGLScene::loadMatricesToShadowShader()
 
   ngl::Mat4 textureMatrix= bias * proj * view * model;
 
-  shader->setUniform("textureMatrix",textureMatrix);
+  ngl::ShaderLib::setUniform("textureMatrix",textureMatrix);
 
 }
 
 void NGLScene::loadToLightPOVShader()
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->use("Colour");
+  ngl::ShaderLib::use("Colour");
   ngl::Mat4 MVP= m_lightCameraProject*m_lightCameraView*m_transform.getMatrix();
-  shader->setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("MVP",MVP);
 }
 
 void NGLScene::drawScene(std::function<void()> _shaderFunc  )
@@ -363,8 +350,6 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
   m_mouseGlobalTX.m_m[3][0] = m_modelPos.m_x;
   m_mouseGlobalTX.m_m[3][1] = m_modelPos.m_y;
   m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
-   // get the VBO instance and draw the built in teapot
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
 
   m_transform.reset();
   // this is the same as calling
@@ -374,38 +359,38 @@ void NGLScene::drawScene(std::function<void()> _shaderFunc  )
   m_transform.setScale(0.1f,0.1f,0.1f);
   m_transform.setPosition(0,-0.5,0);
   _shaderFunc();
-  prim->draw("dragon");
+  ngl::VAOPrimitives::draw("dragon");
   m_transform.reset();
   m_transform.setPosition(-3,0.0,0.0);
   _shaderFunc();
-  prim->draw("sphere");
+  ngl::VAOPrimitives::draw("sphere");
 
   m_transform.reset();
 
   m_transform.setPosition(3,0.0,0.0);
   _shaderFunc();
-  prim->draw("cube");
+  ngl::VAOPrimitives::draw("cube");
 
   m_transform.reset();
   m_transform.setPosition(0,0.0,2.0);
   _shaderFunc();
-  prim->draw("teapot");
+  ngl::VAOPrimitives::draw("teapot");
 
   m_transform.reset();
   m_transform.setScale(0.1f,0.1f,0.1f);
   m_transform.setPosition(0,-0.5,-2.0);
   _shaderFunc();
-  prim->draw("buddah");
+  ngl::VAOPrimitives::draw("buddah");
 
   m_transform.reset();
   m_transform.setPosition(2,0,-2.0);
   _shaderFunc();
-  prim->draw("torus");
+  ngl::VAOPrimitives::draw("torus");
 
   m_transform.reset();
   m_transform.setPosition(0.0,-0.5,0.0);
   _shaderFunc();
-  prim->draw("plane");
+  ngl::VAOPrimitives::draw("plane");
 }
 
 
@@ -434,8 +419,7 @@ void NGLScene::timerEvent( QTimerEvent *_event )
 
 void NGLScene::debugTexture(float _t, float _b, float _l, float _r)
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->use("Texture");
+  ngl::ShaderLib::use("Texture");
   glBindTexture(GL_TEXTURE_2D,m_textureID);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
@@ -530,8 +514,7 @@ void NGLScene::setColour()
   QColor colour = QColorDialog::getColor();
   if( colour.isValid())
   {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-    (*shader)["Shadow"]->use();
+    ngl::ShaderLib::use("Shadow");
     m_colour.m_r=colour.redF();
     m_colour.m_g=colour.greenF();
     m_colour.m_b=colour.blueF();

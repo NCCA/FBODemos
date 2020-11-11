@@ -87,7 +87,7 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
 
   // get some setup stuff
   GLint maxAttach = 0;
@@ -104,12 +104,8 @@ void NGLScene::initializeGL()
   m_win.width  = static_cast<int>( width() * devicePixelRatio() );
   m_win.height = static_cast<int>( height() * devicePixelRatio() );
 
-  // now to load the shader and set the values
-  // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
-
-  shader->loadShader(ScreenQuad,"shaders/ScreenQuadVertex.glsl","shaders/ScreenQuadFragment.glsl");
+  ngl::ShaderLib::loadShader(ScreenQuad,"shaders/ScreenQuadVertex.glsl","shaders/ScreenQuadFragment.glsl");
 
   // now create our texture object
   createTextureObjects(maxAttach);
@@ -124,12 +120,10 @@ void NGLScene::paintGL()
   //----------------------------------------------------------------------------------------------------------------------
   // draw to our FBO first
   //----------------------------------------------------------------------------------------------------------------------
-  // grab an instance of the shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->use(ScreenQuad);
-  shader->setUniform("checkSize",40.0f);
-  shader->setUniform("width",m_win.width);
-  shader->setUniform("height",m_win.height);
+  ngl::ShaderLib::use(ScreenQuad);
+  ngl::ShaderLib::setUniform("checkSize",40.0f);
+  ngl::ShaderLib::setUniform("width",m_win.width);
+  ngl::ShaderLib::setUniform("height",m_win.height);
   glViewport(0, 0, m_win.width, m_win.height);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
