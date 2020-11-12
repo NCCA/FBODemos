@@ -13,7 +13,7 @@ project(FBODemosBuildALL)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/DeferredShading/)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Blit)
-add_subdirectory(${PROJECT_SOURCE_DIR}/Dof)
+add_subdirectory(${PROJECT_SOURCE_DIR}/DOF)
 add_subdirectory(${PROJECT_SOURCE_DIR}/MultiSampleFBO)
 add_subdirectory(${PROJECT_SOURCE_DIR}/PCFShadows)
 # excluded from build need to update this demo as uing ngl 6!
