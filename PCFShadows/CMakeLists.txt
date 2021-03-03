@@ -19,7 +19,6 @@ find_package(NGL CONFIG REQUIRED)
 set(CMAKE_AUTOMOC ON)
 # find Qt libs
 find_package(Qt5Widgets)
-
 # use C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
