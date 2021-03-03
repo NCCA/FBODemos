@@ -142,7 +142,7 @@ void NGLScene::initializeGL()
   // now create our FBO and texture
   createFramebufferObject();
   // we need to enable depth testing
-  glEnable(GL_DEPTH_TEST);
+  //glEnable(GL_DEPTH_TEST);
   // set the depth comparison mode
   glDepthFunc(GL_LEQUAL);
   // set the bg to black
@@ -260,7 +260,7 @@ void NGLScene::paintGL()
   // Pass 1 render our Depth texture to the FBO
   //----------------------------------------------------------------------------------------------------------------------
   // enable culling
-  glEnable(GL_CULL_FACE);
+//  glEnable(GL_CULL_FACE);
 
   // bind the FBO and render offscreen to the texture
   glBindFramebuffer(GL_FRAMEBUFFER,m_fboID);

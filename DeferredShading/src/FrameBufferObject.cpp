@@ -115,7 +115,7 @@ GLuint FrameBufferObject::getTextureID(const std::string &_name) noexcept
 }
 bool FrameBufferObject::bindToSampler(const std::string &_name,GLuint _location) noexcept
 {
-
+  return false;
 }
 void FrameBufferObject::print() const noexcept
 {

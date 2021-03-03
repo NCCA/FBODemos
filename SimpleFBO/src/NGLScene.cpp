@@ -189,7 +189,7 @@ void NGLScene::paintGL()
   rotX.rotateX(m_win.spinXFace);
   rotY.rotateY(m_win.spinYFace);
   // multiply the rotations
-  m_mouseGlobalTX=rotY*rotX;
+  m_mouseGlobalTX=rotX*rotY;
   // add the translations
   m_mouseGlobalTX.m_m[3][0] = m_modelPos.m_x;
   m_mouseGlobalTX.m_m[3][1] = m_modelPos.m_y;
@@ -223,7 +223,7 @@ void NGLScene::paintGL()
   // now enable the texture we just rendered to
   glBindTexture(GL_TEXTURE_2D, m_textureID);
   // do any mipmap generation
-  glGenerateMipmap(GL_TEXTURE_2D);
+ // glGenerateMipmap(GL_TEXTURE_2D);
   // set the screen for a different clear colour
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // clear this screen

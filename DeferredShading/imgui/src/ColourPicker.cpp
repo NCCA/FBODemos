@@ -299,6 +299,6 @@ bool ColorSelector(const char* pLabel, ngl::Vec3 &oRGB)
   oRGB.m_r=newRGB.m_r;
   oRGB.m_r=newRGB.m_g;
   oRGB.m_r=newRGB.m_b;
-
+	return true;
 }
 
