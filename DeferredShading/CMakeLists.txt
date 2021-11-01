@@ -19,7 +19,13 @@ find_package(NGL CONFIG REQUIRED)
 # Instruct CMake to run moc automatically when needed (Qt projects only)
 set(CMAKE_AUTOMOC ON)
 # find Qt libs
-find_package(Qt5Widgets)
+find_package(Qt6 COMPONENTS OpenGL Widgets QUIET )
+if ( Qt6_FOUND )
+    message("Found Qt6 Using that")
+else()
+    message("Found Qt5 Using that")
+    find_package(Qt5 COMPONENTS OpenGL Widgets REQUIRED)
+endif()
 # use C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -50,7 +56,7 @@ target_sources(${TargetName} PRIVATE
 			${IMGuiSources} 			                    
 )
 
-target_link_libraries(${TargetName} PRIVATE  NGL Qt5::Widgets)
+target_link_libraries(${TargetName} PRIVATE  NGL Qt::Widgets Qt::OpenGL)
 
 
 add_custom_target(${TargetName}CopyShaders ALL
