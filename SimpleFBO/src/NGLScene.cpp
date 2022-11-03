@@ -9,20 +9,20 @@
 NGLScene::NGLScene()
 {
   setTitle("Simple Framebuffer Object Demo");
-  m_win.width=width();
-  m_win.height=height();
+  m_win.width = width();
+  m_win.height = height();
 }
 
 NGLScene::~NGLScene()
 {
-  std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
+  std::cout << "Shutting down NGL, removing VAO's and Shaders\n";
   // clear out our buffers
-  glDeleteTextures(1,&m_textureID);
-  glDeleteFramebuffers(1,&m_fboID);
+  glDeleteTextures(1, &m_textureID);
+  glDeleteFramebuffers(1, &m_fboID);
 }
 
-const static int TEXTURE_WIDTH=1024;
-const static int TEXTURE_HEIGHT=1024;
+const static int TEXTURE_WIDTH = 1024;
+const static int TEXTURE_HEIGHT = 1024;
 
 void NGLScene::createTextureObject()
 {
@@ -34,7 +34,7 @@ void NGLScene::createTextureObject()
   // set params
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  //glGenerateMipmapEXT(GL_TEXTURE_2D);  // set the data size but just set the buffer to 0 as we will fill it with the FBO
+  // glGenerateMipmapEXT(GL_TEXTURE_2D);  // set the data size but just set the buffer to 0 as we will fill it with the FBO
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
   // now turn the texture off for now
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -62,16 +62,14 @@ void NGLScene::createFramebufferObject()
   // now got back to the default render context
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // were finished as we have an attached RB so delete it
-  glDeleteRenderbuffers(1,&rboID);
+  glDeleteRenderbuffers(1, &rboID);
 }
 
-
-
-void NGLScene::resizeGL( int _w, int _h )
+void NGLScene::resizeGL(int _w, int _h)
 {
-  m_project=ngl::perspective(45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
-  m_win.width  = static_cast<int>( _w * devicePixelRatio() );
-  m_win.height = static_cast<int>( _h * devicePixelRatio() );
+  m_project = ngl::perspective(45.0f, static_cast<float>(_w) / _h, 0.05f, 350.0f);
+  m_win.width = static_cast<int>(_w * devicePixelRatio());
+  m_win.height = static_cast<int>(_h * devicePixelRatio());
 }
 
 void NGLScene::initializeGL()
@@ -80,64 +78,64 @@ void NGLScene::initializeGL()
   // gl commands from the lib, if this is not done program will crash
   ngl::NGLInit::initialize();
 
-  glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
+  glClearColor(0.4f, 0.4f, 0.4f, 1.0f); // Grey Background
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
   // enable multisampling for smoother drawing
   glEnable(GL_MULTISAMPLE);
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(2,2,2);
-  ngl::Vec3 to(0,0,0);
-  ngl::Vec3 up(0,1,0);
+  ngl::Vec3 from(2, 2, 2);
+  ngl::Vec3 to(0, 0, 0);
+  ngl::Vec3 up(0, 1, 0);
   // now load to our new camera
-  m_view=ngl::lookAt(from,to,up);
+  m_view = ngl::lookAt(from, to, up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_project=ngl::perspective(45.0f,720.0f/576.0f,0.05f,350.0f);
+  m_project = ngl::perspective(45.0f, 720.0f / 576.0f, 0.05f, 350.0f);
   // we are creating a shader called Phong
   ngl::ShaderLib::createShaderProgram("Phong");
   // now we are going to create empty shaders for Frag and Vert
-  ngl::ShaderLib::attachShader("PhongVertex",ngl::ShaderType::VERTEX);
-  ngl::ShaderLib::attachShader("PhongFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::attachShader("PhongVertex", ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("PhongFragment", ngl::ShaderType::FRAGMENT);
   // attach the source
-  ngl::ShaderLib::loadShaderSource("PhongVertex","shaders/PhongVert.glsl");
-  ngl::ShaderLib::loadShaderSource("PhongFragment","shaders/PhongFrag.glsl");
+  ngl::ShaderLib::loadShaderSource("PhongVertex", "shaders/PhongVert.glsl");
+  ngl::ShaderLib::loadShaderSource("PhongFragment", "shaders/PhongFrag.glsl");
   // compile the shaders
   ngl::ShaderLib::compileShader("PhongVertex");
   ngl::ShaderLib::compileShader("PhongFragment");
   // add them to the program
-  ngl::ShaderLib::attachShaderToProgram("Phong","PhongVertex");
-  ngl::ShaderLib::attachShaderToProgram("Phong","PhongFragment");
+  ngl::ShaderLib::attachShaderToProgram("Phong", "PhongVertex");
+  ngl::ShaderLib::attachShaderToProgram("Phong", "PhongFragment");
 
   // now we have associated this data we can link the shader
   ngl::ShaderLib::linkProgramObject("Phong");
   // and make it active ready to load values
   ngl::ShaderLib::use("Phong");
-  ngl::Vec4 lightPos(-2.0f,5.0f,2.0f,0.0f);
-  ngl::ShaderLib::setUniform("light.position",lightPos);
-  ngl::ShaderLib::setUniform("light.ambient",0.0f,0.0f,0.0f,1.0f);
-  ngl::ShaderLib::setUniform("light.diffuse",1.0f,1.0f,1.0f,1.0f);
-  ngl::ShaderLib::setUniform("light.specular",0.8f,0.8f,0.8f,1.0f);
+  ngl::Vec4 lightPos(-2.0f, 5.0f, 2.0f, 0.0f);
+  ngl::ShaderLib::setUniform("light.position", lightPos);
+  ngl::ShaderLib::setUniform("light.ambient", 0.0f, 0.0f, 0.0f, 1.0f);
+  ngl::ShaderLib::setUniform("light.diffuse", 1.0f, 1.0f, 1.0f, 1.0f);
+  ngl::ShaderLib::setUniform("light.specular", 0.8f, 0.8f, 0.8f, 1.0f);
   // gold like phong material
-  ngl::ShaderLib::setUniform("material.ambient",0.274725f,0.1995f,0.0745f,0.0f);
-  ngl::ShaderLib::setUniform("material.diffuse",0.75164f,0.60648f,0.22648f,0.0f);
-  ngl::ShaderLib::setUniform("material.specular",0.628281f,0.555802f,0.3666065f,0.0f);
-  ngl::ShaderLib::setUniform("material.shininess",51.2f);
-  ngl::ShaderLib::setUniform("viewerPos",from);
+  ngl::ShaderLib::setUniform("material.ambient", 0.274725f, 0.1995f, 0.0745f, 0.0f);
+  ngl::ShaderLib::setUniform("material.diffuse", 0.75164f, 0.60648f, 0.22648f, 0.0f);
+  ngl::ShaderLib::setUniform("material.specular", 0.628281f, 0.555802f, 0.3666065f, 0.0f);
+  ngl::ShaderLib::setUniform("material.shininess", 51.2f);
+  ngl::ShaderLib::setUniform("viewerPos", from);
 
   // now load our texture shader
   ngl::ShaderLib::createShaderProgram("TextureShader");
 
-  ngl::ShaderLib::attachShader("TextureVertex",ngl::ShaderType::VERTEX);
-  ngl::ShaderLib::attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
-  ngl::ShaderLib::loadShaderSource("TextureVertex","shaders/TextureVertex.glsl");
-  ngl::ShaderLib::loadShaderSource("TextureFragment","shaders/TextureFragment.glsl");
+  ngl::ShaderLib::attachShader("TextureVertex", ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("TextureFragment", ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::loadShaderSource("TextureVertex", "shaders/TextureVertex.glsl");
+  ngl::ShaderLib::loadShaderSource("TextureFragment", "shaders/TextureFragment.glsl");
 
   ngl::ShaderLib::compileShader("TextureVertex");
   ngl::ShaderLib::compileShader("TextureFragment");
-  ngl::ShaderLib::attachShaderToProgram("TextureShader","TextureVertex");
-  ngl::ShaderLib::attachShaderToProgram("TextureShader","TextureFragment");
+  ngl::ShaderLib::attachShaderToProgram("TextureShader", "TextureVertex");
+  ngl::ShaderLib::attachShaderToProgram("TextureShader", "TextureFragment");
 
   // link the shader no attributes are bound
   ngl::ShaderLib::linkProgramObject("TextureShader");
@@ -148,14 +146,12 @@ void NGLScene::initializeGL()
   // now the fbo
   createFramebufferObject();
   // now create the primitives to draw
-  ngl::VAOPrimitives::createTrianglePlane("plane",2,2,20,20,ngl::Vec3(0,1,0));
-  ngl::VAOPrimitives::createSphere("sphere",0.4f,80);
+  ngl::VAOPrimitives::createTrianglePlane("plane", 2, 2, 20, 20, ngl::Vec3(0, 1, 0));
+  ngl::VAOPrimitives::createSphere("sphere", 0.4f, 80);
   startTimer(1);
   GLint maxAttach = 0;
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttach);
-
 }
-
 
 void NGLScene::loadMatricesToShader()
 {
@@ -163,15 +159,15 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat4 MVP;
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
-  M=m_transform.getMatrix();
-  MV=  m_view*M;
-  MVP= m_project*MV;
-  normalMatrix=MV;
+  M = m_transform.getMatrix();
+  MV = m_view * M;
+  MVP = m_project * MV;
+  normalMatrix = MV;
   normalMatrix.inverse().transpose();
-  ngl::ShaderLib::setUniform("MV",MV);
-  ngl::ShaderLib::setUniform("MVP",MVP);
-  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
-  ngl::ShaderLib::setUniform("M",M);
+  ngl::ShaderLib::setUniform("MV", MV);
+  ngl::ShaderLib::setUniform("MVP", MVP);
+  ngl::ShaderLib::setUniform("normalMatrix", normalMatrix);
+  ngl::ShaderLib::setUniform("M", M);
 }
 
 void NGLScene::paintGL()
@@ -183,25 +179,21 @@ void NGLScene::paintGL()
   ngl::ShaderLib::use("Phong");
 
   // Rotation based on the mouse position for our global transform
-  ngl::Mat4 rotX;
-  ngl::Mat4 rotY;
-  // create the rotation matrices
-  rotX.rotateX(m_win.spinXFace);
-  rotY.rotateY(m_win.spinYFace);
+  auto rotX = ngl::Mat4::rotateX(m_win.spinXFace);
+  auto rotY = ngl::Mat4::rotateY(m_win.spinYFace);
   // multiply the rotations
-  m_mouseGlobalTX=rotX*rotY;
+  m_mouseGlobalTX = rotX * rotY;
   // add the translations
   m_mouseGlobalTX.m_m[3][0] = m_modelPos.m_x;
   m_mouseGlobalTX.m_m[3][1] = m_modelPos.m_y;
   m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
 
-
-  static float rot=0.0;
+  static float rot = 0.0;
   // we are now going to draw to our FBO
   // set the rendering destination to FBO
   glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
   // set the background colour (using blue to show it up)
-  glClearColor(0,0.4f,0.5f,1);
+  glClearColor(0, 0.4f, 0.5f, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // set our viewport to the size of the texture
   // if we want a different camera we wouldset this here
@@ -209,10 +201,10 @@ void NGLScene::paintGL()
   // rotate the teapot
   m_transform.reset();
 
-  m_transform.setRotation(rot,rot,rot);
+  m_transform.setRotation(rot, rot, rot);
   loadMatricesToShader();
   ngl::VAOPrimitives::draw("teapot");
-  rot+=0.5;
+  rot += 0.5;
 
   //----------------------------------------------------------------------------------------------------------------------
   // now we are going to draw to the normal GL buffer and use the texture created
@@ -223,9 +215,9 @@ void NGLScene::paintGL()
   // now enable the texture we just rendered to
   glBindTexture(GL_TEXTURE_2D, m_textureID);
   // do any mipmap generation
- // glGenerateMipmap(GL_TEXTURE_2D);
+  // glGenerateMipmap(GL_TEXTURE_2D);
   // set the screen for a different clear colour
-  glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
+  glClearColor(0.4f, 0.4f, 0.4f, 1.0f); // Grey Background
   // clear this screen
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // get the new shader and set the new viewport size
@@ -234,18 +226,15 @@ void NGLScene::paintGL()
   glViewport(0, 0, static_cast<GLsizei>(width() * devicePixelRatio()), static_cast<GLsizei>(height() * devicePixelRatio()));
   ngl::Mat4 MVP;
   m_transform.reset();
-  MVP= m_project*m_view*m_mouseGlobalTX;
-  ngl::ShaderLib::setUniform("MVP",MVP);
+  MVP = m_project * m_view * m_mouseGlobalTX;
+  ngl::ShaderLib::setUniform("MVP", MVP);
   ngl::VAOPrimitives::draw("plane");
-  m_transform.setPosition(0,1,0);
-  MVP= m_project*m_view*m_mouseGlobalTX*m_transform.getMatrix();
-  ngl::ShaderLib::setUniform("MVP",MVP);
+  m_transform.setPosition(0, 1, 0);
+  MVP = m_project * m_view * m_mouseGlobalTX * m_transform.getMatrix();
+  ngl::ShaderLib::setUniform("MVP", MVP);
   ngl::VAOPrimitives::draw("sphere");
   //----------------------------------------------------------------------------------------------------------------------
- }
-
-
-
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -256,23 +245,33 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   switch (_event->key())
   {
   // escape key to quite
-  case Qt::Key_Escape : QGuiApplication::exit(EXIT_SUCCESS); break;
+  case Qt::Key_Escape:
+    QGuiApplication::exit(EXIT_SUCCESS);
+    break;
   // turn on wirframe rendering
-  case Qt::Key_W : glPolygonMode(GL_FRONT_AND_BACK,GL_LINE); break;
+  case Qt::Key_W:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    break;
   // turn off wire frame
-  case Qt::Key_S : glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); break;
+  case Qt::Key_S:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    break;
   // show full screen
-  case Qt::Key_F : showFullScreen(); break;
+  case Qt::Key_F:
+    showFullScreen();
+    break;
   // show windowed
-  case Qt::Key_N : showNormal(); break;
-  default : break;
+  case Qt::Key_N:
+    showNormal();
+    break;
+  default:
+    break;
   }
   // finally update the GLWindow and re-draw
-    update();
+  update();
 }
 void NGLScene::timerEvent(QTimerEvent *_event)
 {
   NGL_UNUSED(_event);
   update();
 }
-

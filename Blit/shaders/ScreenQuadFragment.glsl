@@ -11,7 +11,6 @@ layout(location=7)out vec4 fragColour7;
 
 
 
-uniform sampler2D colour;
 uniform int width;
 uniform int height;
 uniform float checkSize;

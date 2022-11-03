@@ -29,7 +29,7 @@ void NGLScene::createTextureObjects()
   for(auto f : m_files)
   {
     ngl::Texture t(f);
-   m_textures.push_back( t.setTextureGL() );
+    m_textures.push_back( t.setTextureGL() );
   }
 
 }
