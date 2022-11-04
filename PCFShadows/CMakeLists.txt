@@ -45,7 +45,10 @@ target_sources(${TargetName} PRIVATE ${PROJECT_SOURCE_DIR}/src/main.cpp
 			${PROJECT_SOURCE_DIR}/include/MainWindow.h  
 			${PROJECT_SOURCE_DIR}/include/NGLScene.h  
 )
-target_link_libraries(${TargetName} PRIVATE  NGL Qt::Widgets Qt::OpenGL Qt::OpenGLWidgets)
+target_link_libraries(${TargetName} PRIVATE  NGL Qt::Widgets Qt::OpenGL )
+if (Qt6_FOUND)
+    target_link_libraries(${TargetName} PRIVATE   Qt::OpenGLWidgets)
+endif()
 
 add_custom_target(${TargetName}CopyShadersAndfonts ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
