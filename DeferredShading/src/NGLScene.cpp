@@ -14,6 +14,7 @@
 #include "imgui.h"
 #include "QtImGui.h"
 #include "ImGuizmo.h"
+#include <iostream>
 
 NGLScene::NGLScene()
 {

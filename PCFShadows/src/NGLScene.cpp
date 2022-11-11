@@ -9,6 +9,8 @@
 #include <ngl/MultiBufferVAO.h>
 #include <ngl/ShaderLib.h>
 #include <array>
+#include <iostream>
+
 //----------------------------------------------------------------------------------------------------------------------
 // in this ctor we need to call the CreateCoreGLContext class, this is mainly for the MacOS Lion version as
 // we need to init the OpenGL 3.2 sub-system which is different than other platforms

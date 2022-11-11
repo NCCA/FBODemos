@@ -8,6 +8,8 @@
 #include <ngl/SimpleVAO.h>
 #include <ngl/VAOFactory.h>
 #include <ngl/Image.h>
+#include <iostream>
+
 NGLScene::NGLScene()
 {
   setTitle("Depth of Field");
