@@ -102,6 +102,8 @@ private:
   GLuint m_normal;
   GLuint m_albedo;
   ngl::Vec3 m_lightPos={0.0f,1.0f,0.0f};
+  enum class DisplayModes: int {Shaded=0,Position=1,Normal=2,Albedo=3} ;
+  DisplayModes m_displayMode = DisplayModes::Shaded;
 
 
 

@@ -9,9 +9,10 @@ out vec4 fragColour;
 
 uniform vec3 lightPos;
 uniform vec3 lightColour;
-
+uniform int displayMode;
 void main()
 {
+  // Lighting Pass
   // grab the components we need to do lighting
   vec3 position=texture(position,texCoord).xyz;
   vec3 normal=texture(normal,texCoord).xyz;
@@ -22,6 +23,21 @@ void main()
   float diff=max(dot(normal,lightDir),0.0);
   // calculate the diffuse colour
   vec3 diffuse=diff*lightColour;
+  if (displayMode==0)
+  {
   fragColour=vec4(diffuse*albedo,1.0);
-  
+  }
+  else if (displayMode==1)
+  {
+    fragColour=vec4(position,1.0);
+  }
+
+  else if (displayMode==2)
+  {
+    fragColour=vec4(normal,1.0);
+  }
+  else if (displayMode==3)
+  {
+    fragColour=vec4(albedo,1.0);
+  }
 }

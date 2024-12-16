@@ -148,6 +148,7 @@ void NGLScene::paintGL()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // grab an instance of the shader manager
   ngl::ShaderLib::use(ScreenTri);
+  ngl::ShaderLib::setUniform("displayMode",static_cast<int>(m_displayMode));  
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_position);
   ngl::ShaderLib::setUniform("position",0);
@@ -210,6 +211,19 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
     break;
   case Qt::Key_O:
     m_lightPos.m_z += 0.5;
+    break;
+
+  case Qt::Key_1 :
+    m_displayMode = DisplayModes::Shaded;
+    break;
+ case Qt::Key_2 :
+    m_displayMode = DisplayModes::Position;
+    break;
+ case Qt::Key_3 :
+    m_displayMode = DisplayModes::Normal;
+    break;
+ case Qt::Key_4 :
+    m_displayMode = DisplayModes::Albedo;
     break;
 
   default:
