@@ -45,10 +45,7 @@ void NGLScene::initializeGL()
   // Need a vertex array to call draw arrays
   // this will have no buffers
   glGenVertexArrays(1,&m_vao);
-  // Now generate a texture for our final image
-  glGenTextures(1, &m_textureID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TextureWidth, TextureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
+  // generate the frame buffer object.
   generateFBO();
 
   ngl::ShaderLib::loadShader(GeometryPass,"shaders/GeometryPassVertex.glsl","shaders/GeometryPassFragment.glsl");
@@ -66,15 +63,17 @@ void NGLScene::initializeGL()
 
 void NGLScene::generateFBO()
 {
-  // Generate framebuffer and textures
+    // 1. Generates and binds the framebuffer.
     glGenFramebuffers(1, &m_fboID);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
-
+    // 2. Creates and configures three textures for position, normal, and albedo data.
+    // note could use an array here for the id's
     glGenTextures(1, &m_position);
     glBindTexture(GL_TEXTURE_2D, m_position);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, TextureWidth, TextureHeight, 0, GL_RGB, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // 4 Attaches the textures to the framebuffer.
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_position, 0);
 
     glGenTextures(1, &m_normal);
@@ -91,20 +90,22 @@ void NGLScene::generateFBO()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, m_albedo, 0);
 
+   // 5. Attaches the renderbuffer to the framebuffer for depth
     GLuint rboDepth;
     glGenRenderbuffers(1, &rboDepth);
     glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, TextureWidth, TextureHeight);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-
+  // 6. Specifies the draw buffers for the framebuffer.
     GLenum attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, attachments);
-
+  // check it all worked and exit if not.
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cerr << "Framebuffer not complete!\n";
         exit(EXIT_FAILURE);
         
     }
+  // 8. Unbinds the framebuffer and activates the default framebuffer.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

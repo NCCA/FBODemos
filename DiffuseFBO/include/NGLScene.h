@@ -75,9 +75,6 @@ private:
   //----------------------------------------------------------------------------------------------------------------------
   void wheelEvent(QWheelEvent *_event) override;
 
-  GLuint m_vao=0;
-  GLuint m_textureID;
-  GLuint m_fboID;
   void timerEvent(QTimerEvent *) override;
   bool m_animate = false;
   void generateFBO();
@@ -97,11 +94,17 @@ private:
   /// @brief the projection matrix for camera
   //----------------------------------------------------------------------------------------------------------------------
   ngl::Mat4 m_projection;
-
+  // Texture ID for our colour attachments 
   GLuint m_position;
   GLuint m_normal;
   GLuint m_albedo;
+  // vbo id for screen tri
+  GLuint m_vao=0;
+  GLuint m_fboID;
+
+  // position of the lights
   ngl::Vec3 m_lightPos={0.0f,1.0f,0.0f};
+  // display modes for debugging
   enum class DisplayModes: int {Shaded=0,Position=1,Normal=2,Albedo=3} ;
   DisplayModes m_displayMode = DisplayModes::Shaded;
 
