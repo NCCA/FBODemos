@@ -9,21 +9,19 @@ out vec4 fragColour;
 
 uniform vec3 lightPos;
 uniform vec3 lightColour;
-uniform vec3 clearColor;
 
 void main()
 {
-
+  // grab the components we need to do lighting
   vec3 position=texture(position,texCoord).xyz;
   vec3 normal=texture(normal,texCoord).xyz;
   vec3 albedo=texture(albedo,texCoord).xyz;
+  // calculate the light direction 
   vec3 lightDir=normalize(lightPos-position);
+  // calculate the diffuse term
   float diff=max(dot(normal,lightDir),0.0);
+  // calculate the diffuse colour
   vec3 diffuse=diff*lightColour;
-  // nead to add clear colour for backgrond
-  fragColour=vec4(diffuse*albedo+clearColor,1.0);
-//  fragColour=vec4(diffuse*albedo,1.0);
-  
-
+  fragColour=vec4(diffuse*albedo,1.0);
   
 }

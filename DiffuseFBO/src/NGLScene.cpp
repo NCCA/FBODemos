@@ -9,7 +9,7 @@
 #include <QMouseEvent>
 
 constexpr size_t TextureWidth=1024;
-constexpr size_t TextureHeight=720;
+constexpr size_t TextureHeight=1024;
 
 NGLScene::NGLScene()
 {
@@ -38,8 +38,6 @@ void NGLScene::initializeGL()
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f); // Grey Background
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
-  // enable multisampling for smoother drawing
-  glEnable(GL_MULTISAMPLE);
   ngl::ShaderLib::loadShader(ScreenTri,"shaders/ScreenTriVertex.glsl","shaders/ScreenTriFragment.glsl");
   ngl::ShaderLib::use(ScreenTri);
   ngl::ShaderLib::setUniform("lightColour",1.0f,1.0f,1.0f);
@@ -113,6 +111,18 @@ void NGLScene::generateFBO()
 
 void NGLScene::paintGL()
 {
+
+  // Rotation based on the mouse position for our global transform
+  auto rotX = ngl::Mat4::rotateX(m_win.spinXFace);
+  auto rotY = ngl::Mat4::rotateY(m_win.spinYFace);
+
+  // multiply the rotations
+  m_mouseGlobalTX = rotX * rotY;
+  // add the translations
+  m_mouseGlobalTX.m_m[3][0] = m_modelPos.m_x;
+  m_mouseGlobalTX.m_m[3][1] = m_modelPos.m_y;
+  m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
+
   // render pass 1 geometry pass
   glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
   glViewport(0, 0,TextureWidth,TextureHeight);
@@ -130,16 +140,14 @@ void NGLScene::paintGL()
   ngl::ShaderLib::setUniform("model",M);    
   ngl::VAOPrimitives::draw("teapot");
 
-  // grab an instance of the shader manager
-  ngl::ShaderLib::use(ScreenTri);
-
   // now bind back to the default framebuffer and draw 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0,m_win.width,m_win.height);
   // clear the screen and depth buffer
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f); // Grey Background
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  // grab an instance of the shader manager
+  ngl::ShaderLib::use(ScreenTri);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_position);
   ngl::ShaderLib::setUniform("position",0);
