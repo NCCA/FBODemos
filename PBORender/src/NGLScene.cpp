@@ -5,6 +5,10 @@
 #include <ngl/NGLInit.h>
 #include <ngl/Random.h>
 #include <iostream>
+
+constexpr int tex_width=1024;
+constexpr int tex_height=1024;
+
 NGLScene::NGLScene()
 {
   setTitle("PBORender");
@@ -26,7 +30,7 @@ void NGLScene::createTextureObject(int _width, int _height)
   // Now generate the PixelBufferObject for mapping later
   glGenBuffers(1, &m_pbo);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo);
-  glBufferData(GL_PIXEL_UNPACK_BUFFER, 1024*1024*3, 0, GL_STREAM_DRAW);
+  glBufferData(GL_PIXEL_UNPACK_BUFFER, tex_width*tex_height*3, 0, GL_STREAM_DRAW);
   // Now bind defaults 
   glBindTexture(GL_TEXTURE_2D,0);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -74,7 +78,7 @@ void NGLScene::initializeGL()
   m_win.height = static_cast<int>(height() * devicePixelRatio());
 
   // now create our texture object
-  createTextureObject(m_win.width,m_win.height);
+  createTextureObject(tex_width,tex_height);
   // now the fbo
   createFramebufferObject();
   // Add generator for the colours
@@ -85,14 +89,15 @@ void NGLScene::initializeGL()
 
 void NGLScene::paintGL()
 {
-  glViewport(0, 0, m_win.width, m_win.height);
+  glViewport(0, 0, tex_width,tex_height);
   glClear(GL_COLOR_BUFFER_BIT );
+  glDisable(GL_MULTISAMPLE);
   // Bind the default FBO to draw to
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
   // Bind the texture to read from
   glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fboID);
   // Now blit to screen note source and destination must be the same size
-  glBlitFramebuffer(0, 0, m_win.width, m_win.height, 0, 0, m_win.width, m_win.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  glBlitFramebuffer(0, 0, tex_width,tex_height,   0,0,tex_width,tex_height,GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 
@@ -123,13 +128,13 @@ void NGLScene::timerEvent(QTimerEvent *_event)
   glBindTexture(GL_TEXTURE_2D, m_texture);
   // bind the pixel buffer so we can map to this texuture
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo);
-  glBufferData(GL_PIXEL_UNPACK_BUFFER, m_win.width* m_win.height*3, 0, GL_STREAM_DRAW);
+  glBufferData(GL_PIXEL_UNPACK_BUFFER, tex_width*tex_height*3, 0, GL_STREAM_DRAW);
   // Now grab a pointer into this buffer so we can write to it
   GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
   if(ptr)
   {
     // loop for the single scanline and set the colour
-    for(int i=0; i<m_win.width; ++i)
+    for(int i=0; i<tex_width; ++i)
     {
       ptr[pixel]=r;
       ptr[pixel+1]=g;
@@ -139,12 +144,12 @@ void NGLScene::timerEvent(QTimerEvent *_event)
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release the mapped buffer
   }
   // if we are at top move to bottom
-  if(pixel >=m_win.width* m_win.height*3)
+  if(pixel >=tex_width*tex_height*3)
   {
     pixel=0;
   }
   // We need to call this to let copy the new data into the buffer
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_win.width, m_win.height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_width,tex_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
   // bind back to default buffers
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
