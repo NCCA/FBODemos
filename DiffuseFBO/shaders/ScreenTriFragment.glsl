@@ -19,10 +19,14 @@ void main()
   vec3 albedo=texture(albedo,texCoord).xyz;
   // calculate the light direction 
   vec3 lightDir=normalize(lightPos-position);
+  float distance = length(lightPos - position);
+  float attenuation = 1.0 / (distance * distance);
+  vec3 radiance = lightColour * attenuation;
+
   // calculate the diffuse term
   float diff=max(dot(normal,lightDir),0.0);
   // calculate the diffuse colour
-  vec3 diffuse=diff*lightColour;
+  vec3 diffuse=diff*radiance;
   if (displayMode==0)
   {
   fragColour=vec4(diffuse*albedo,1.0);
@@ -38,6 +42,6 @@ void main()
   }
   else if (displayMode==3)
   {
-    fragColour=vec4(albedo,1.0);
+    fragColour=vec4(vec3(1.0/2.2)*albedo,1.0);
   }
 }

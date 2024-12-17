@@ -9,6 +9,6 @@ uniform vec3 colour;
 void main() 
 {
     position = FragPos;
-    normal = normalize(Normal);
+    normal = Normal;
     albedo = colour;
 }

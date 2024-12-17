@@ -22,5 +22,6 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/Shadows)
 add_subdirectory(${PROJECT_SOURCE_DIR}/SimpleFBO)
 add_subdirectory(${PROJECT_SOURCE_DIR}/TextureBlit)
 add_subdirectory(${PROJECT_SOURCE_DIR}/PBORender)
+add_subdirectory(${PROJECT_SOURCE_DIR}/DiffuseFBO)
 
 

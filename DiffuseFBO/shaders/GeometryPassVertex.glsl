@@ -12,6 +12,6 @@ uniform mat3 normalMatrix;
 void main() 
 {
     FragPos = vec3(model * vec4(inPos, 1.0));
-    Normal = normalMatrix * inNormal; 
+    Normal = normalize(normalMatrix*inNormal); 
     gl_Position = MVP * vec4(inPos, 1.0);
 }

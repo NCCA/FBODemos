@@ -3,6 +3,7 @@
 #include <ngl/NGLStream.h>
 #include <ngl/ShaderLib.h>
 #include <ngl/VAOPrimitives.h>
+#include <ngl/Transformation.h>
 #include <ngl/Util.h>
 #include <ngl/Random.h>
 #include <QGuiApplication>
@@ -40,7 +41,7 @@ void NGLScene::initializeGL()
   glEnable(GL_DEPTH_TEST);
   ngl::ShaderLib::loadShader(ScreenTri,"shaders/ScreenTriVertex.glsl","shaders/ScreenTriFragment.glsl");
   ngl::ShaderLib::use(ScreenTri);
-  ngl::ShaderLib::setUniform("lightColour",1.0f,1.0f,1.0f);
+  ngl::ShaderLib::setUniform("lightColour",5.0f,5.0f,5.0f);
   ngl::ShaderLib::setUniform("lightPos",m_lightPos);
   // Need a vertex array to call draw arrays
   // this will have no buffers
@@ -107,6 +108,10 @@ void NGLScene::generateFBO()
     }
   // 8. Unbinds the framebuffer and activates the default framebuffer.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  ngl::ShaderLib::use(ngl::nglColourShader);
+  ngl::ShaderLib::setUniform("Colour",1.0,0.0,0.0,1.0);
+
 }
 
 
@@ -140,6 +145,13 @@ void NGLScene::paintGL()
   ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
   ngl::ShaderLib::setUniform("model",M);    
   ngl::VAOPrimitives::draw("teapot");
+  // draw light
+  ngl::ShaderLib::use(ngl::nglColourShader);
+  ngl::Transformation tx;
+  tx.setPosition(m_lightPos);
+  tx.setScale(0.1f,0.1f,0.1f);
+  ngl::ShaderLib::setUniform("MVP", m_projection * m_view * tx.getMatrix()*    m_mouseGlobalTX);
+  ngl::VAOPrimitives::draw("cube");
 
   // now bind back to the default framebuffer and draw 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -196,22 +208,22 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
     showNormal();
     break;
     case Qt::Key_Left:
-    m_lightPos.m_x -= 0.5;
+    m_lightPos.m_x -= 0.1;
     break;
   case Qt::Key_Right:
-    m_lightPos.m_x += 0.5;
+    m_lightPos.m_x += 0.1;
     break;
   case Qt::Key_Up:
-    m_lightPos.m_y += 0.5;
+    m_lightPos.m_y += 0.1;
     break;
   case Qt::Key_Down:
-    m_lightPos.m_y -= 0.5;
+    m_lightPos.m_y -= 0.1;
     break;
   case Qt::Key_I:
-    m_lightPos.m_z -= 0.5;
+    m_lightPos.m_z -= 0.1;
     break;
   case Qt::Key_O:
-    m_lightPos.m_z += 0.5;
+    m_lightPos.m_z += 0.1;
     break;
 
   case Qt::Key_1 :
